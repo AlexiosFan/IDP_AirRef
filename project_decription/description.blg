@@ -1,0 +1,51 @@
+This is BibTeX, Version 0.99d (TeX Live 2022/dev/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: description.aux
+The style file: plain.bst
+Database file #1: citations.bib
+Too many commas in name 1 of "Gamow, G., Stern, M." for entry puzzle
+while executing---line 1049 of file plain.bst
+Too many commas in name 1 of "Gamow, G., Stern, M." for entry puzzle
+while executing---line 1090 of file plain.bst
+You've used 4 entries,
+            2118 wiz_defined-function locations,
+            522 strings with 4545 characters,
+and the built_in function-call counts, 1330 in all, are:
+= -- 134
+> -- 44
+< -- 2
++ -- 19
+- -- 14
+* -- 77
+:= -- 216
+add.period$ -- 13
+call.type$ -- 4
+change.case$ -- 18
+chr.to.int$ -- 0
+cite$ -- 4
+duplicate$ -- 62
+empty$ -- 113
+format.name$ -- 14
+if$ -- 290
+int.to.chr$ -- 0
+int.to.str$ -- 4
+missing$ -- 5
+newline$ -- 23
+num.names$ -- 8
+pop$ -- 25
+preamble$ -- 1
+purify$ -- 15
+quote$ -- 0
+skip$ -- 43
+stack$ -- 0
+substring$ -- 82
+swap$ -- 19
+text.length$ -- 2
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 14
+warning$ -- 0
+while$ -- 14
+width$ -- 5
+write$ -- 46
+(There were 2 error messages)

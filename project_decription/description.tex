@@ -1,0 +1,84 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{xcolor}
+
+\newcommand*{\bigo}{\mathcal{O}}
+\newcommand*{\R}{\mathbb{R}}
+\newtheorem{theorem}{theorem}[section]
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{observation}[theorem]{Observation}
+
+
+
+\title{A Convex Hull for Airplane Refueling Problem(subject to change)}
+\author{Zixuan Fan}
+
+\begin{document}
+
+\maketitle
+
+\section{Motivation}
+This project aims to a description of the convex hull for the linear programming description of the 
+airplane refueling problem. The problem lies in the field of mathematical optimization, 
+which is an interdisciplinary branch of mathematics and computer science. In addition, 
+an aspect of theorectial computer science is also involved: the computational complexity of the problem 
+is a foundamental goal for the problem, and is worthing studying in the project. The project suits me well for two reasons.
+\begin{itemize}
+    \item My application area in bachelor's study was mathematics, where I took the course Einführung in die Optimierung. This course provides proper background knowledges for the project. 
+    \item My main interest in master's study is theorectical computer science. The project is a good opportunity for me to combine my interest in mathematics and computer science.
+\end{itemize}
+
+\section{Project Description}
+\subsection{Theoretical Foundations}
+A natural language description of air plane refueling problem by \cite{puzzle}
+\begin{quotation}
+    Given a sequence of airplanes filled with fuel. Suppose they can refill each other while flying.
+    What is the longest distance/flying time the last plane can reach?
+\end{quotation}
+A formal definition by \cite{woeginger2010scheduling} is based on the following assumptions
+\begin{itemize}
+    \item The airplanes are flying in a straight line.
+    \item All airplanes consume the fuel of only one airplane simultaneously
+    \item Whenver an airplane runs out of fuel, it lands immediately.
+    \item We use flying time instead of distance for the objective function
+\end{itemize}
+The problem is formulated as follows
+\begin{definition}
+    Given $n$ planes, each with its capacity $w_j$ and fuel consumption rate $p_j$. What is the maximal flying time the last plane can reach?
+\end{definition}
+A reduction to scheduling problem was found. Let $C_j$ denote the completion time of job $j$, i.e. the flying time of the plane $i$.
+The optimization goal is 
+\begin{align*}
+    \min -\sum_{j=0}^n w_j / C_j
+\end{align*}
+Many researchers focus on the precedence of the problem for an efficient algorithm \cite{li2019fast} \cite{vasquez2015airplane},
+In this project, I will examine the problem from another aspect: convex hull of the schedule vectors, $(1/C_1, ..., 1/C_n)$. \\
+\color{red} Question: Why are there $n!$ such vectors? Is it because there are $n!$ permutations, and each permutation 
+corresponds to a unique vector? \color{black}
+
+\subsection{Practical Goals}
+Aside from the theoretical aspect, the convex hull needs to be actually computed given an instance of the problem. 
+This requires to take advantage of the existing software, Polymake. Polymake is a software for research in polyhedral geometry.
+It can help to compute the polytopes and polyhedra, which potentially makes up the desired convex hull in this project. 
+The practical goal will be implementing the algorithm for the computation of the convex hull. \\
+\color{red} Question: using software itself and C++ programming for an extension?
+\color{black}
+
+\section{Course to visit from another subject}
+The course I would like to visit is Combinatorial Optimization(MA4502) offered by the department of Mathematics at School of CIT.
+This course deals with application of linear programming in many combinatorial problems such as netflows, matching etc. 
+In addition, it also studies approximation of NP-hard problems via linear programming. Through learning of the course, 
+I believe I will obtain more insights into handling of combinatorial problems, and ideally be able to work on the project. 
+
+\section{Timetable and Milestones: TODO and to discuss}
+
+\bibliographystyle{plain}
+\bibliography{citations}
+\end{document}

@@ -1,0 +1,25 @@
+\begin{thebibliography}{1}
+
+\bibitem{puzzle}
+Stern~M. Gamow, G.
+\newblock {\em Puzzle-Math}.
+\newblock Viking, New York, 1958.
+
+\bibitem{li2019fast}
+Jianshu Li, Xiaoyin Hu, Junjie Luo, and Jinchuan Cui.
+\newblock A fast exact algorithm for airplane refueling problem.
+\newblock In {\em International Conference on Combinatorial Optimization and
+  Applications}, pages 316--327. Springer, 2019.
+
+\bibitem{vasquez2015airplane}
+Oscar~C V{\'a}squez.
+\newblock For the airplane refueling problem local precedence implies global
+  precedence.
+\newblock {\em Optimization Letters}, 9(4):663--675, 2015.
+
+\bibitem{woeginger2010scheduling}
+GJ~Woeginger.
+\newblock Scheduling (dagstuhl seminar 10071).
+\newblock {\em Dagstuhl Research Online Publication Server}, page~24, 2010.
+
+\end{thebibliography}
