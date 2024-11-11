@@ -59,6 +59,14 @@ def polymake_script(points, p):
 # f_vector.write(output + "\n")
 
 # f_vector.close()
+p = [17, 20, 30, 41]
+script = open("./script.pl", "w")
+script.write(polymake_script(points(p), p))
+script.close()
 
+
+# capture the output
+output = subprocess.run(["polymake", "--script", "./script.pl"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.decode('utf-8')
+print(output)
 
 

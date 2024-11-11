@@ -3,14 +3,16 @@ from input_gen import *
 
 import numpy as np
 import pandas as pd
+import random as rand
 
 vertices = []
 f_vectors = []
 
-l = [4, 8, 16, 32]
-
-for p in [[a, b, c, d, e, f] for a in l for b in l for c in l for d in l for e in l for f in l]:
-    map = {i: p.index(i) for i in p}
+for i in range(9000):
+    p = []
+    for j in range(4):
+        x = rand.randint(1, 1000)
+        p.append(x)
 
     # generating the script
     script = open("./script.pl", "w")
@@ -24,5 +26,4 @@ for p in [[a, b, c, d, e, f] for a in l for b in l for c in l for d in l for e i
     f_vectors.append(output)
 
 df = pd.DataFrame(data = {'vertice': vertices, 'f_vector': f_vectors})
-
-df.to_csv("all_6d_16")
+df.to_csv("all_4d_9000_sorted")
