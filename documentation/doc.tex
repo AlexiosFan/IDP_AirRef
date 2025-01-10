@@ -1,4 +1,7 @@
 \documentclass[12pt,letterpaper]{article}
+
+\usepackage{hyperref}
+
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
@@ -28,36 +31,67 @@
 \maketitle
 
 \section{Motivation}
+
+\subsection{Problem Statement}
 The Airplane Refueling Problem is a combinatorial problem that is 
 neither known to be NP-complete nor polynomially solvable. 
+It reflects a real-life problem, where a fleet of airplanes refuels each other 
+to maximize the flying distance. Formally, we give the following definition. 
 \begin{definition}
  Given $n$ planes each with a tank $w_j$ and consumption rate $p_j$,
  what is the longest time/distance that this fleet of planes can fly with full tanks,
  if they can refuel each other?
 \end{definition}
 An intuitive idea is consuming the tank of only one plane 
-at a time, and drop it out after its tank is empty. This approach 
+at a time, and dropping it out after its tank is empty. This approach 
 finds a \textit{drop out ordering} $\sigma$
 that maximizes the objective function 
 \begin{align*}
     \max \sum_{j=1}^{n} \dfrac{w_{\sigma(j)}}{\sum_{k = j}^n p_{\sigma(k)}}
 \end{align*}
-Woeginger et al. formalized this problem as a scheduling problem. \cite{woeginger2010scheduling}
-In the scheduling context, we view $\sigma$ as permutation, the reverse of ordering.
+To elaborate on this objective function, only the planes with indexing no less than $j$ in order $\sigma$
+are consuming the tank of the $j$-th plane. Thus, the time until the $j$-th plane is fully consumed is 
+\begin{align*}
+    \dfrac{w_{\sigma(j)}}{\sum_{k = j}^n p_{\sigma(k)}}
+\end{align*}
+while the sum of all these times is the objective maximization function.
+
+\subsection{Scheduling and Mathematical Programming}
+Based on understaning mentioned above, Woeginger et al. formalized this problem as a scheduling problem. \cite{woeginger2010scheduling}
+In the scheduling context, we view $\sigma$ as permutation $\pi$, the reverse of ordering.
 We can also change the objective function to a simpler form. 
+\begin{align*}
+    \sum_{j=1}^{n} \dfrac{w_{\sigma(j)}}{\sum_{k = j}^n p_{\sigma(k)}} = \sum_{j = 1}^n \dfrac{w_{\pi(j)}}{\sum_{k = 1}^j p_{\pi(k)}}
+\end{align*}
+where $p$ stands for the processing time of the $j$-th job now. 
+For simplicity, we also introduce the completion time $C_j$
+that is, 
+the time until the $j$-th plane is consumed.
 \begin{align*}
     \sum_{j = 1}^n \dfrac{w_{\pi(j)}}{\sum_{k = 1}^j p_{\pi(k)}} =  \sum_{j = 1}^n \dfrac{w_{j}}{C_j}
 \end{align*}
-Based on this, we can also introduce a mathematical programming formulation.
+With all premises explained, we can also introduce a mathematical programming formulation. Note that $S_n$ stands for the permutation group of order $n$. 
 \begin{align}
     &\max \sum_{j = 1}^n \dfrac{w_j}{C_j} \label{eq:mathprog} \tag{A} \\ 
-    \text{s. t.\ }& C_{\pi(j+1)} - C_{\pi(j)} = p_{\pi(j)} \forall j \nonumber
+    \text{s. t.\ }& C_{\pi(j+1)} - C_{\pi(j)} = p_{\pi(j)} \forall j \nonumber \\
+    & \pi \in S_n \nonumber
 \end{align}
 Should this be a linear program, we can solve it in polynomial time. However, the objective function 
 itself is not linear, while the constraints involving permutation are also complicated. 
 Hence, we want to explore the different possibilities for solving this problem concerning mathematical programming. 
+
 \section{Theoretical Backgrounds}
-The fundamental idea is computing the convex hull of feasible solutions, which are all possible combinations of the completion time 
+The fundamental idea is reformulating the problem as a linear program or a convex program, which 
+is solvable in polynomial time. By removing the completion time in \ref{eq:mathprog}, we obtain a
+linear objective function. 
+\begin{align*}
+    &\max w^T \cdot x \label{eq:linobj} \tag{B} \\ 
+    \text{s. t.\ }& C_{\pi(j+1)} - C_{\pi(j)} = p_{\pi(j)} \forall j \\
+    & \pi \text{ is a permutation} \\ 
+    & x_j = \dfrac{1}{C_j} \ \ \forall j \in [n] 
+\end{align*}
+Following this formulation, an intuition is
+computing the convex hull of feasible solutions, which are all possible combinations of the completion time's reciprocals. 
 \begin{align*}
  s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n}\right)
 \end{align*} 
@@ -65,6 +99,7 @@ We can observe that each solution vector corresponds to a permutation of the con
 More precisely, the longer the completion time, the later the tank is consumed in the permutation.
 There are $n!$ many of these vectors, and the convex hull is a polytope in $\R^n$. 
 Thus, we are interested in a special shape, a permutahedron.
+
 \subsection{Permutation Matrices}
 Before we take a closer look at permutahedra, we need to introduce permutation matrices.
 \begin{definition}
@@ -82,7 +117,7 @@ can be used to describe permutations.
     There is a bijective mapping between permutation matrices and permutations.
 \end{lemma}
 \begin{proof}
-    For each bijective mapping $\pi: [n] \to [n]$, we construct a permutation matrix $M$.
+    For each permutation $\pi \in S_n$, we construct a permutation matrix $M$.
     \begin{align*}
         m_{ij} = 
         \begin{cases}
@@ -110,31 +145,53 @@ In the special case of permutation matrices, the matrix is also orthogonal.
 \begin{corollary}
     If $M$ is a permutation matrix, then $M^{-1} = M^T$.
 \end{corollary}
+
+
 \subsection{Permutahedron}
-A permutahedron is a polytope that is defined with permutations. \cite{doi:10.1137/0122054}
-In the permutahedron of the $k$-th order $P_k$, each vertex is a permutation of $k$ elements.
-Hence, there are $k!$ many vertices in $P_k$. For example, a hexagon is a second-order permutahedron. 
+A permutahedron is a polytope that is the convex hull of all vertices representing a permutation i.e. $\{(\pi(1), \pi(2), \cdots, \pi(k) | \pi \in S_n) \}$. \cite{doi:10.1137/0122054}
+In the permutahedron of the $n$-th order $P_n$, each vertex is a permutation of $n$ elements.
+Hence, there are $n!$ many vertices in $P_n$. For example, a hexagon is a second-order permutahedron. 
 First, we take a look at a simple LP formulation of permutahedra. 
 \begin{align*}
-    \sum_{i \in S} x_i \leq \sum_{k = n - |S| + 1}^n k, \ \ \forall \emptyset \neq S \subset [n]
+    \sum_{i \in S} x_i = \sum_{k = n - |S| + 1}^n k, \ \ \forall \emptyset \neq S \subset [n]
 \end{align*}
 We need $2^n - 2$ facets to define the polytope.
 \\
 Although the number of faces is not polynomial in $n$,
-some symmetric properties were discovered and are useful for optimization. Some researchers(cite later)
-have found an extended formulation $\R^{k^2+2k} \rightarrow \R^{k}$, which allows us 
+some symmetric properties were discovered and are useful for optimization. Some researchers\textbf{cite later}
+have found an extended formulation $\R^{k^2+k} \rightarrow \R^{k}$, which allows us 
 to solve the LP on $P_k$ in polynomial time. 
 
 \begin{align}
-    &\sum_{j} y_{ij} \leq 1, \ \ \forall i \in [n], \sum_{i} y_{ij} \leq 1, \ \ \forall j \in[n] \tag{B} \\ 
-    &y_{ij} \geq 0, \ \ \forall i, j \in [n] \nonumber \\
-    &x_i = \sum_{j = 1}^n j y_{ij}, \ \ \forall i \in [n] \nonumber
+    &\sum_{j \in [n]} y_{ij} = 1, \ \ \forall i \in [n], \sum_{i \in [n]} y_{ij} = 1, \ \ \forall j \in[n] \tag{C} \\ 
+    &y_{ij} \geq 0, \ \ \forall i, j \in [n] \nonumber 
 \end{align}
-The trick is the the permutation matrix. It is observed that $(y_{ij})$ 
-form the permutation matrix $\Pi \in \R^{n \times n}$. As a consequence, 
-the vertex is computable via 
+The trick is the permutation matrix. We show that this is a formulation of the 
+convex hull of all permutation metrices.
+\begin{lemma}
+    The polytope defined by \ref{eq:C} is the convex hull of all permutation matrices to order $n$.
+\end{lemma}
+\begin{proof}
+    It suffices to show that \ref{eq:C} describes the set of all convex combinations of permutation matrices. \\
+    $\impliedby$: Let $M^1, M^2, \cdots M^k$ be arbitrary distinct permutation matrices. Let $\lambda_1, \lambda_2, \cdots \lambda_k \in [0, 1]$ be arbitrary
+    such that $\sum_{i=1}^k = 1$.
+    We obtain a convex combination $Y = \sum_{l = 0}^k \lambda_l M^i$.We check each constraints accordingly. 
+    \begin{align*}
+    \sum_{j \in [n]} y_{ij} &= \sum_{j \in [n]} \sum_{l = 0}^k \lambda_l m_{ij}^l \\
+    &= \sum_{l = 0}^k \lambda_l \sum_{j \in [n]} m_{ij} = \sum_{l = 0}^k \lambda_l = 1 \\ 
+    \sum_{i \in [n]} y_{ij} &= \sum_{i \in [n]} \sum_{l = 0}^k \lambda_l m_{ij}^l \\
+    &= \sum_{l = 0}^k \lambda_l \sum_{i \in [n]} m_{ij} = \sum_{l = 0}^k \lambda_l = 1 \\ 
+    y_{ij} &= \sum_{l = 0}^k \lambda_k m_{ij}^l \geq \sum_{l = 0}^k \lambda_k \cdot 0  = 0 
+    \end{align*}
+    We may conclude that $Y$ is in the polytope described by \ref{eq:C}. \\
+    $\implies$: Let $Y$ be a feasible solution to constraints in \ref{eq:C}. 
+    We observe that $Y$ is doubly stochastic. It is shown by Birkhoff's theorem \textbf{cite Birkhoff} that 
+    $Y$ is a convex combination of permutation matrices. 
+\end{proof}
+
+As a consequence, we can obtain the vertices representing the permutations by 
 \begin{align*}
- x = \Pi (1, 2, ..., n)^T
+    x_i = \sum_{j = 0}^n j \cdot y_{ij} \forall i \in[n]
 \end{align*}
 In this way, we are able to reduce the number of constraints to $n^2 + 3n$ under $R^{n^2 + n}$.
 This extended formulation is helpful in terms of both linear programming and non-linear programming. 
@@ -268,10 +325,10 @@ deep learning, which works well in predicting the number of facets. In addition,
 Aside from machine learning, we also visualized the data to see if any pattern was observed, as shown in the figure below. 
 A clear separation can be witnessed, but we cannot find a smooth curve separating the data, for outliers reside 
 in the middle of the other category. 
-\begin{figure*}[ht]
-    \centering
-    \includegraphics[scale=0.6]{3d_plot.png}
-\end{figure*}
+%\begin{figure*}[ht]
+%    \centering
+%    \includegraphics[scale=0.6]{3d_plot.png}
+%\end{figure*}
 On the other hand, the data themselves also yield interesting properties. If we consider a solution vector 
 \begin{align*}
  s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n} \right)
