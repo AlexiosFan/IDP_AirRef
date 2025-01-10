@@ -19,24 +19,21 @@
 \newtheorem{corollary}[theorem]{Corollary}
 \newtheorem{observation}[theorem]{Observation}
 
-
-
 \setlength\parindent{0pt}
 
 \title{Computing the convex hull of solution vectors to the airplane refueling problem to find a general description}
 \author{Zixuan Fan}
 
 \begin{document}
+\maketitle
 
 \section{Motivation}
-
-\section{Mathematical Backgrounds}
-The Airplane Refueling Problem is combinatorial problem that is 
+The Airplane Refueling Problem is a combinatorial problem that is 
 neither known to be NP-complete nor polynomially solvable. 
 \begin{definition}
-    Given $n$ planes each with a tank $w_j$ and consumption rate $p_j$,
-    what is the longest time/distance that this fleet of planes can fly,
-    if they can refuel each other?
+ Given $n$ planes each with a tank $w_j$ and consumption rate $p_j$,
+ what is the longest time/distance that this fleet of planes can fly with full tanks,
+ if they can refuel each other?
 \end{definition}
 An intuitive idea is consuming the tank of only one plane 
 at a time, and drop it out after its tank is empty. This approach 
@@ -45,55 +42,159 @@ that maximizes the objective function
 \begin{align*}
     \max \sum_{j=1}^{n} \dfrac{w_{\sigma(j)}}{\sum_{k = j}^n p_{\sigma(k)}}
 \end{align*}
-The problem can also be formalized as a scheduling problem, proposed by Woeginger. 
-In context of scheduling, $\sigma$ can be viewed as permutation, the reverse of ordering, 
-while we can also change the objective function to a simpler form. 
+Woeginger et al. formalized this problem as a scheduling problem. \cite{woeginger2010scheduling}
+In the scheduling context, we view $\sigma$ as permutation, the reverse of ordering.
+We can also change the objective function to a simpler form. 
 \begin{align*}
     \sum_{j = 1}^n \dfrac{w_{\pi(j)}}{\sum_{k = 1}^j p_{\pi(k)}} =  \sum_{j = 1}^n \dfrac{w_{j}}{C_j}
 \end{align*}
-On the basis of this, we are also able to introduce a mathematical programming formulation.
+Based on this, we can also introduce a mathematical programming formulation.
 \begin{align}
     &\max \sum_{j = 1}^n \dfrac{w_j}{C_j} \label{eq:mathprog} \tag{A} \\ 
-    \text{s. t.\ }&  C_{\pi(j+1)} - C_{\pi(j)} = p_{\pi(j)} \forall j \nonumber
+    \text{s. t.\ }& C_{\pi(j+1)} - C_{\pi(j)} = p_{\pi(j)} \forall j \nonumber
 \end{align}
-As we know, a linear program or a convex semi-definite program is solvable using various interior-point methods. 
-Since the mathematical program is neither linear nor convex semi-definite, our goal is to find a reduction the 
-realizes this goal. On the otherhand, we are also interested in formulate the problem as an integer program, 
-for it also provides us with some other possible solution approaches. 
-
-\section{First Attempt in Theory}
-Our first attempt focused on the fact that the solution space of the formulation \ref{eq:mathprog}
-is a polytope based on permutations. Each permutation generates a tuple of $(1/C_1, 1/C_2, ..., 1/C_n)$.
-Since $w_j$'s are given constants, a straightforward solution is simply traversing all $n!$ permutations. 
+Should this be a linear program, we can solve it in polynomial time. However, the objective function 
+itself is not linear, while the constraints involving permutation are also complicated. 
+Hence, we want to explore the different possibilities for solving this problem concerning mathematical programming. 
+\section{Theoretical Backgrounds}
+The fundamental idea is computing the convex hull of feasible solutions, which are all possible combinations of the completion time 
+\begin{align*}
+ s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n}\right)
+\end{align*} 
+We can observe that each solution vector corresponds to a permutation of the consumption rate. 
+More precisely, the longer the completion time, the later the tank is consumed in the permutation.
+There are $n!$ many of these vectors, and the convex hull is a polytope in $\R^n$. 
+Thus, we are interested in a special shape, a permutahedron.
+\subsection{Permutation Matrices}
+Before we take a closer look at permutahedra, we need to introduce permutation matrices.
+\begin{definition}
+    A permutation matrix $M \in \R^{n \times n}$ is a square binary matrix describing a permutation $\pi$.
+    For each entry $m_{ij}$ of $M$, the following constraints must hold.
+    \begin{enumerate}
+        \item $m_{ij} \in \{0, 1\}$ for all $i, j$
+        \item $\sum_{i = 1}^n m_{ij} = 1$, for all $j$
+        \item $\sum_{j = 1}^n m_{ij} = 1$, for all $i$
+    \end{enumerate}
+\end{definition}
+First, we show that there is a bijective relationship between permutation matrices and permutations, i.e. permutation matrices 
+can be used to describe permutations.
+\begin{lemma}
+    There is a bijective mapping between permutation matrices and permutations.
+\end{lemma}
+\begin{proof}
+    For each bijective mapping $\pi: [n] \to [n]$, we construct a permutation matrix $M$.
+    \begin{align*}
+        m_{ij} = 
+        \begin{cases}
+            1 & \text{if } \pi(j) = i \\
+            0 & \text{otherwise}
+        \end{cases}
+    \end{align*}
+\end{proof}
+A property of permutation matrices is that they are doubly stochastic, i.e., the sum of each row and each column is 1.
+In the special case of permutation matrices, the matrix is also orthogonal.
+\begin{lemma}
+    If $M$ is a permutation matrix, then $M$ is orthogonal.
+\end{lemma}
+\begin{proof}
+    We consider the matrix product $MM^T$. It suffices to show $MM^T = I$. The $(i, j)$-th entry of $MM^T$ is given by 
+    \begin{align*}
+        (MM^T)_{ij} = \sum_{k = 1}^n m_{ik}m_{jk}
+    \end{align*}
+    If $i \neq j$, then we are summing up the product of entries in two different rows. 
+    Since there is only one entry equal to one in each column, the products are all zero. Hence, their sum is also zero. \\ 
+    If $i \neq j$, then we are summing up the product of entries in the same row.
+    There is only one entry equal to one in each row, so the product is one. \\
+    In conclusion, the matrix product is the identity matrix, and $M$ is orthogonal.
+\end{proof}
+\begin{corollary}
+    If $M$ is a permutation matrix, then $M^{-1} = M^T$.
+\end{corollary}
 \subsection{Permutahedron}
-A permutahedron is a polytope that is defined by permutations. 
+A permutahedron is a polytope that is defined with permutations. \cite{doi:10.1137/0122054}
 In the permutahedron of the $k$-th order $P_k$, each vertex is a permutation of $k$ elements.
-Hence there are $k!$ many vertices in $P_k$. For example, a hexagon is a second-order permutahedron. \\
+Hence, there are $k!$ many vertices in $P_k$. For example, a hexagon is a second-order permutahedron. 
+First, we take a look at a simple LP formulation of permutahedra. 
+\begin{align*}
+    \sum_{i \in S} x_i \leq \sum_{k = n - |S| + 1}^n k, \ \ \forall \emptyset \neq S \subset [n]
+\end{align*}
+We need $2^n - 2$ facets to define the polytope.
+\\
 Although the number of faces is not polynomial in $n$,
-some symmetric property was discovered, and can be used for optimization. Some researchers(cite later)
+some symmetric properties were discovered and are useful for optimization. Some researchers(cite later)
 have found an extended formulation $\R^{k^2+2k} \rightarrow \R^{k}$, which allows us 
 to solve the LP on $P_k$ in polynomial time. 
 
-\subsection{Details in attempts}
-Elaborate formulation later: the symmetric property does not exists in 
-our polytope. Using the similar formulation, we end up with a 
-semi-definite program that has a convex feasible region, 
-but concave objective function. We did not go further on this direction. 
-However, two possiblility remains to be explored:
-\begin{itemize}
-    \item Can we find an extended formulation by changing the formulation for permutahedron slight?
-    \item Can we try some classical methods like interior-point method on this formulation, what is the result?
-\end{itemize}
-
-\section{Second Attempt by Computation}
-After this attemtp in theory, we decided to move to do some computation work. 
-For simplicity, python was chosen to generate some randomized inputs and scripts for 
-the computation tool, polymake. 
-
-\subsection{Input Generation}
-As we have analyzed in the first attempt, we want to compute the polytope of the all solution vectors 
+\begin{align}
+    &\sum_{j} y_{ij} \leq 1, \ \ \forall i \in [n], \sum_{i} y_{ij} \leq 1, \ \ \forall j \in[n] \tag{B} \\ 
+    &y_{ij} \geq 0, \ \ \forall i, j \in [n] \nonumber \\
+    &x_i = \sum_{j = 1}^n j y_{ij}, \ \ \forall i \in [n] \nonumber
+\end{align}
+The trick is the the permutation matrix. It is observed that $(y_{ij})$ 
+form the permutation matrix $\Pi \in \R^{n \times n}$. As a consequence, 
+the vertex is computable via 
 \begin{align*}
-    s = (\dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n})
+ x = \Pi (1, 2, ..., n)^T
+\end{align*}
+In this way, we are able to reduce the number of constraints to $n^2 + 3n$ under $R^{n^2 + n}$.
+This extended formulation is helpful in terms of both linear programming and non-linear programming. 
+\section{Details in attempts}
+In this section, we present both our attempts in theory and practice. 
+We will put the attempts with the correct theoretical basis in the first place; some false but interesting attempts follow at the end. 
+
+\subsection{Attempts with non-linear programming}
+Inspired by the permutahedron, we want to find a similar formulation for the polytope of the completion time,
+because there is a permutation-related structure in the polytope. 
+
+\paragraph{Formulation}
+\begin{align*}
+    \max w^Tx& \text{ s.t. } \label{eq:C} \tag{C} \\
+ x_i y_i &= 1 \ \forall i, \ \ y \geq 0, \\ 
+    \sum_{i \in [n]} z_{ij} &= 1 \forall j,  \ \ 
+    \sum_{j \in [n]} z_{ij} = 1 \forall i,  \ z_{ij} \in \{0, 1\} \forall i, j \\ 
+    \Pi &= (z_{ij}), S = \begin{pmatrix}
+        1 & \cdots & 0 \\ 
+        \cdots & \cdots & \cdots \\ 
+        1 & \cdots & 1
+    \end{pmatrix} \\
+ y &= \Pi^T S \Pi p 
+\end{align*}
+While $(z_{ij})$ again serves as the permutation matrix, another lower-triangular matrix $S$ is introduced to
+compute the completion time. Another difference is $\Pi^T$. Since the objective function is defined  
+for each plane, we need to map the completion time back to the original order.\\
+Luckily, the permutation matrix is doubly stochastic, so $\Pi^{-1} = \Pi^T$ saves us a lot of inverse matrix computation. 
+
+\paragraph{Convexity}
+Now that we have a correct mixed-integer formulation that seems easy to solve, we still need to check its convexity for 
+real computation with non-approximation, that is, changing the choice of $z_{ij}$
+\begin{align*}
+ z_{ij} \in [0, 1] \ \forall i, j
+\end{align*}
+The constraints are quadratic equalities, so we lose the convexity right away. 
+There are some ways to make them convex, by introducing inequalities. 
+\begin{align*}
+ x_i y_i &\geq 1 \ \forall i \\
+ y &\geq \Pi^T S \Pi p
+\end{align*}
+In this way, we can obtain a feasible, convex, but unbounded area. 
+Unboundedness is another problem, for we are doing a maximization. 
+Unfortunately, we cannot solve the problem with this non-linear programming approach. 
+
+\paragraph{Simple Practical Experiments}
+Although the program is not convex, we can still run it in some scientific computing software.
+For software based on Disciplined Convex Programming, like CVXPY \cite{diamond2016cvxpy}, we cannot even run the program 
+because it has semantic checks on convexity. For software that does not require this check, like SCIP \cite{BolusaniEtal2024ZR}, the program 
+ends up in a dead loop without termination. 
+
+\subsection{Attempts with linear programming}
+Since finding a convex formulation directly from permutahedra is impossible, 
+we wonder if we can find the polytope describing the solution vectors in a linear programming way.
+Without too many theoretical backgrounds, we decided to do some practical computation on those vertices.
+
+\paragraph{Input Generation}
+As we have analyzed in the first attempt, we want to compute the polytope of all solution vectors 
+\begin{align*}
+ s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n} \right)
 \end{align*}
 Since the completion time is based on the permutation $\pi$, we need a few steps to generate all possible 
 vectors. 
@@ -104,127 +205,114 @@ vectors.
     \item Compute the inverse of $C_j$
     \item Repeat until all permutations are visited
 \end{enumerate}
-This results in $n!$ vertices in $\R^n$. A straightforward traveral on the vertices is absolutely not 
+This results in $n!$ vertices in $\R^n$. A straightforward traversal on the vertices is not 
 polynomial-time, but it may help us to find some polynomial-time structure within the polytope.
 
-\subsection{Usage of Polymake}
+\paragraph{Computation}
+For the computation of the polytope with vertices, we use the scientific computing software polymake \cite{assarf2017computing}.
+Polymake is a software that can compute the convex hull of a set of points in $\R^n$. 
+The computation was run on a private computer with Intel i5-12600k CPU with 16 GB RAM. 
 
-\subsection{Results}
+\paragraph{Results}
 Although the computation of the polytope is polynomial-time in the number of vertices, our computation takes 
 a significant amount of time. The reason is that the number of vertices is factorial in $n$. 
 The computation of a 7-dimensional polytope does not terminate within 24 hours. Thus, we establish a large amount of 
-computation only in $n = 4$ and $n = 5$. Some computation of $n = 6$ was also done, but a large amount of computation 
+computation only in $n = 4$ and $n = 5$. We also tried some computation for $n = 6$, but a large amount of computation 
 is not applicable. 
-\begin{table}
+\begin{table}[ht]
     \centering
     \begin{tabular}{||c | c | c ||}
         \hline 
         $n$ & Number of Facets & Number of Unique Values\\
         \hline 
         \hline 
-        2 & 2 & 1\\
+ 2 & 2 & 1\\
         \hline 
-        3 & 8 & 1\\
+ 3 & 8 & 1\\
         \hline 
-        4 & 67, 68, 69, 70 & 4\\
+ 4 & 67, 68, 69, 70 & 4\\
         \hline 
-        5 & $700 \sim 800$ & $\geq 66$\\
+ 5 & $700 \sim 800$ & $\geq 66$\\
         \hline 
-        6 & $10000 \sim 12000$  & Unknown\\
+ 6 & $10000 \sim 12000$  & Unknown\\
         \hline 
     \end{tabular}
     \caption{Number of facets in the polytope for $n \leq 6$}
 \end{table}
-Starting from $n = 4$, the number of facets is no longer a unique number. 
-Hence we guess that the number of facets is somehow related to the input chosen. 
-Unfornately, a direct pattern cannot be observer for $n=5$. 
-Thus, we try to use machine learning to help us find some pattern. 
+Starting from $n = 4$, the number of facets is no longer unique. 
+Hence, we guess that the number of facets is somehow related to the input chosen. 
+Unfortunately, a direct pattern was not observed for $n=5$. 
+Based on the data we have obtained, we might guess that the growth of the number of facets is exponential in $n$. 
+We would then want to use basic machine-learning techniques to see if we can find a pattern in the data.
 
 
-\section{Third Attempt by Machine Learning}
-In this section, we would propose some machine learning techniques to see if we can find some property that 
-either justifies the our polynomial-time prediction or gives some analytical description of the exponential-time behavior. \\
-Fortunately, the problem is already geometric, simple unsupervised learning techniques like clustering
-can tell us some direct information. In addition, the behavior of the polytope is also related to the input chosen 
-as consumption rate. Supervised learning techniques like decision tree, may help us to find a pattern
-that either helps us decide the behavior or a subclass of problems that is solvable in polynomial-time.
-
-\subsection{Regression}
-
-\subsection{Clustering}
-
-\subsection{Decision Trees}
-
-\section{Progress during the vacation}
-To be discussed in the meeting by the start of November
-\subsection{Machine Learning}
-Tree models worked pretty well. The visualization results seem to be interesting. 
-Would be interesting to employ some quadratic classifier. Default quadratic discrimamt analysis do not work well \\
-Discovery in data set: $x_i - x_j = 0$ separates all vertices by a half for all $i, j$.
-
-
-
-\subsection{Formulation with Permutahedron}
+\paragraph{Patterns by Machine Learning}
+Both supervised and unsupervised learning techniques were exploited to find the pattern in the data. 
+We focus on the case of $n = 4$, where the unique number of facets is few, and the data are easy to visualize.
+We randomly generate each input of $v \in \R^4$ and call the Polymake interface for the polytope. In the end, 
+we also process that data such that each dimension is a ratio between its original value and the first dimension. 
 \begin{align*}
-    \max w^Tx& \text{ s.t. } \\
-    x_i y_i &= 1 \ \forall i \\ 
-    \sum_{i \in [n]} z_{ij} &= 1 \forall j \\
-    \sum_{j \in [n]} z_{ij} &= 1 \forall i \\
-    \Pi &= (z_{ij}), S = \begin{pmatrix}
-        1 & \cdots & 0 \\ 
-        \cdots & \cdots & \cdots \\ 
-        1 & \cdots & 1
-    \end{pmatrix} \\
-    y &= \Pi^T S \Pi p
+ (v_1, v_2, v_3, v_4) \rightarrow \left(1, \frac{v_2}{v_1}, \frac{v_3}{v_1}, \frac{v_4}{v_1} \right)
 \end{align*}
-This is a convex program, if $0 \leq z_{ij} \leq 1$. 
-Apparently, computing this program in polynomial time gives 
-us an approximation in some form. Is it worth doing so?
+Here are some results
+\begin{enumerate}
+    \item Linear Regression: The regression models do not fit well; we only obtain an accuracy barely above $0.5$.
+    \item Logistic Regression: slightly better than linear regression, but still not good enough.
+    \item Clustering: The data were clustered into 2 or 3 clusters, but the clusters do not have a clear meaning.
+    \item Trees models: Tree-based models work best, but the tree's visualization is unclear, and we don't see much meaning behind it.
+\end{enumerate}
+In conclusion, the basic machine learning techniques need to work better on the data. Another possibility is 
+deep learning, which works well in predicting the number of facets. In addition, it could work well on the non-linear formulation we proposed in the first attempt.
+
+\paragraph{Visualization and Discoveries}
+Aside from machine learning, we also visualized the data to see if any pattern was observed, as shown in the figure below. 
+A clear separation can be witnessed, but we cannot find a smooth curve separating the data, for outliers reside 
+in the middle of the other category. 
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[scale=0.6]{3d_plot.png}
+\end{figure*}
+On the other hand, the data themselves also yield interesting properties. If we consider a solution vector 
+\begin{align*}
+ s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n} \right)
+\end{align*}
+For every two dimensions $ i \neq j$, the tank of the $i-$th plane is consumed before the $j-$th plane, or vice versa.
+Formally speaking, either $C_1 < C_2$ or vice versa, and there is an equal amount of them, separated by the hyperplane 
+$x_i - x_j = 0$. This separation is a valuable property and an interesting technique called \textbf{hyperplane arrangements} 
+endeavors to research it.
 
 \subsection{Formulation with Vasquez's Idea}
-Local and Global precedence can be computed upon getting input in polynomial time. 
-For the simple case, where the global precedence can be decided directly, we don't need 
-to take a second look. However, for the last case, where the global precedence is decided by the 
-$t^*$ a binary selection is need. Based on this idea, we can also formulate a convex program.  \\
-In this formulation, we assume all global precedence cannot be decided. $z_{ij}$ stands for the precedence. 
-If $z_{ij} = 1$ then $i \prec_g j$ and vice versa.
-\begin{align*}
-    &\max \sum w^T x \text{ s.t. } \\
-    &x_iy_i = 1 \\
-    & (y_i - t^*_{ij} - p_i) z_{ij} \leq 0, z_{ij} \in \{-1, 1\} \\
-    &2y_i = \{2p_i\} + \sum_{j \not= i} p_j (1+z_{ij})
-\end{align*}
-Again this is a discrete problem. Notice that $z_{ij}$ can be transformed into the sign function of $t^*_{ij} - y_i$.
-Here is what we do 
-\begin{align*}
-    &\max \sum w^T x \text{ s.t. } \\
-    &x_iy_i = 1 \\
-    & z_{ij} = y_i - t^*_{ij} - p_i \forall i < j \\
-    & z_{ij} = -z_{ji} \forall i > j \\
-    &2y_i = \{2p_i\} + \sum_{j \not= i} p_j (1+\frac{z_{ij}}{|z_{ij}|})
-\end{align*}
-We are able to simplify the last constraint even a bit more by removing $y$'s and $z$'s
-\begin{align*}
-    &\max \sum w^T x \text{ s.t. } \\
-    &(\frac{1}{x_i} - t^*_{ij} - p_i)(\frac{1}{x_j} - t^*_{ij} - p_j) \leq 0 \forall i < j \\
-    &\dfrac{2}{x_i} = \{2p_i\} + \sum_{j \not= i} p_j \big( 1 + \dfrac{\frac{1}{x_j} - t^*_{ij} - p_j}{|\frac{1}{x_j} - t^*_{ij} - p_j|} \big)
-\end{align*}
-It is easy to see that the second constraints are polynomial functions w.r.t. $x_i$ only. 
-And there $n$ solutions for each of $x$. Mor}{|\frac{1}{x_j} - t^*_{ij} - p_j|} \big)
-\end{equation*}
-Suppose we solve all of these equations to obtain all $n$ solutions for each $x_i$.
-If arranged in decreasing order, they will correspond to their position in the permutation. 
-This where we can employ the formulation of permutahedra again. \\
-For the $j$-th solution of $x_j$ in decreasing order, we donote it as $x_{ij}$
-\begin{align*}
-    &\max \sum w^T x \text{ s.t. } \\
-    & 0 \leq z_{ij} \leq 1 \forall i, j \\
-    &\sum_{i \in [n]} z_{ij} \leq 1 \forall j \\
-    &\sum_{j \in [n]} z_{ij} \leq 1 \forall i \\
-    &x_i = \sum_{j \in [n]} x_{ij} z_{ij} 
-\end{align*} 
-This is a linear program, and can be solved in polynomial time. Recall that $x_{ij}$
-are $n^2$ constant values obtained in polynomial time. If this formulation is indeed correct, 
-we then over. Thus, we now need a computational proof for it. 
+Vasquez's research \cite{vasquez2015airplane} on this problem was also studied carefully during this project. 
+We also attempted to find a formulation based on his idea, but there was no success or flawed formulation. 
+Hence, we do not bother to go into details. 
+
+\section{Summary}
+In this project, we reviewed a few pieces of literature on the airplane refueling problem and 
+attempted to find a mathematical programming formulation for the problem. 
+We gave a valid formulation, but it was not convex, and we were not able to solve it in polynomial time. 
+This intractability is also evidence showing that this direction may not work.
+\begin{enumerate}
+    \item On the one hand, if we try to formulate this problem as a non-linear program problem, we end up 
+ with a maximization problem over an unbounded convex feasible area or a bounded non-convex area. 
+    \item On the other hand, if we try to find a linear programming formulation, in other words, a describing polytope, 
+ it takes us exponential time to compute all facets in exchange for facets. 
+\end{enumerate}
+We can observe the first point from the first attempt on permutahedra, and we want to elaborate on the second point. 
+Suppose we introduce one hyperplane for each constraining curve from \ref{eq:C}, we end up with polynomially many hyperplanes. 
+However, we must compute each intersection, resulting in $n!$ many vertices and naturally exponential growth. 
+
+Ultimately, we also want to point out other possibilities we have experimented with.
+\begin{itemize}
+    \item Extended formulation. As discussed in the previous section, more complex extended formulations may help solve this 
+ problem. 
+    \item Hyperplane Arrangements. Recall the results from data processing; we can witness a clear separation of vertices in the vector. 
+ This property may be helpful for hyperplane arrangements, but there is no direct existing research from this aspect. 
+    \item Deep Learning. Deep learning is always helpful in prediction. It may be helpful in predicting the number of facets or in the
+ computation of our mathematical program. However, the interpretation of those results in formal mathematics remains a challenge. 
+\end{itemize}
+
+\bibliographystyle{plain}
+\bibliography{../documentation/citations}
 
 \end{document}
+    
