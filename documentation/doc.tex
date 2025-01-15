@@ -12,6 +12,7 @@
 \usepackage{algpseudocode}
 \usepackage{xcolor}
 \usepackage{tikz}
+\usepackage{tikz-cd}
 \usepackage{float}
 
 \newcommand*{\bigo}{\mathcal{O}}
@@ -143,6 +144,7 @@ In the special case of permutation matrices, the matrix is also orthogonal.
     In conclusion, the matrix product is the identity matrix, and $M$ is orthogonal.
 \end{proof}
 \begin{corollary}
+    \label{cor:inverse}
     If $M$ is a permutation matrix, then $M^{-1} = M^T$.
 \end{corollary}
 
@@ -163,7 +165,7 @@ have found an extended formulation $\R^{k^2+k} \rightarrow \R^{k}$, which allows
 to solve the LP on $P_k$ in polynomial time. 
 
 \begin{align}
-    &\sum_{j \in [n]} y_{ij} = 1, \ \ \forall i \in [n], \sum_{i \in [n]} y_{ij} = 1, \ \ \forall j \in[n] \tag{C} \\ 
+    &\sum_{j \in [n]} y_{ij} = 1, \ \ \forall i \in [n], \sum_{i \in [n]} y_{ij} = 1, \ \ \forall j \in[n] \label{eq:C} \tag{C} \\ 
     &y_{ij} \geq 0, \ \ \forall i, j \in [n] \nonumber 
 \end{align}
 The trick is the permutation matrix. We show that this is a formulation of the 
@@ -195,17 +197,59 @@ As a consequence, we can obtain the vertices representing the permutations by
 \end{align*}
 In this way, we are able to reduce the number of constraints to $n^2 + 3n$ under $R^{n^2 + n}$.
 This extended formulation is helpful in terms of both linear programming and non-linear programming. 
-\section{Details in attempts}
-In this section, we present both our attempts in theory and practice. 
-We will put the attempts with the correct theoretical basis in the first place; some false but interesting attempts follow at the end. 
 
-\subsection{Attempts with non-linear programming}
+\section{Attempts with non-linear programming}
 Inspired by the permutahedron, we want to find a similar formulation for the polytope of the completion time,
 because there is a permutation-related structure in the polytope. 
 
-\paragraph{Formulation}
+\subsection{Formulation}
+Recall in \ref{eq:linobj}, the completion time $C_j$ is 
+an acculumating sum of the processing time $p_j$ with regard to 
+permutation $\pi$. We would exploit the formulation in \ref{eq:C} 
+to find a similar formulation for the completion time. The figure \ref{fig:completion}
+shows how the completion time is constructed with a permutation, and respectively with a permutation matrix.
+\begin{figure}[h!]
+    \centering
+    \begin{tikzcd}
+        \begin{pmatrix}
+            p_1 \\ 
+            \vdots \\
+            p_n
+        \end{pmatrix} 
+        \arrow[r, "\pi"]
+        & \begin{pmatrix}
+            p_{\pi(1)} \\ 
+            \vdots \\
+            p_{\pi(n)}
+        \end{pmatrix}
+        \arrow[r, "sum"]
+        & \begin{pmatrix}
+            p_{\pi(1)} \\ 
+            \vdots \\
+            \sum_{i = 0}^n p_{\pi(i)}
+        \end{pmatrix} = 
+        \begin{pmatrix}
+            C_{\pi(1)} \\
+            \vdots  \\
+            C_{\pi(n)}
+        \end{pmatrix}
+        \arrow[r, "\pi^{-1}"]
+        & \begin{pmatrix}
+            C_1 \\ 
+            \vdots \\
+            C_n
+        \end{pmatrix}
+    \end{tikzcd}
+    \caption{Construction of completion time}
+    \label{fig:completion}
+\end{figure}
+Apparently, such operations can be formulated with matrices. 
+We introduce a matrix $S$ for the summation operation. $S$ is a lower-triangular matrix with all ones.
+In addition, we retain the permutation matrix as shown in \ref{eq:C}.
+For naming conventions of variables, we use $y_i$ for completion and $z_i$ for permutation matrices 
+in the following formulation.
 \begin{align*}
-    \max w^Tx& \text{ s.t. } \label{eq:C} \tag{C} \\
+    \max w^Tx& \text{ s.t. } \label{eq:D} \tag{D} \\
  x_i y_i &= 1 \ \forall i, \ \ y \geq 0, \\ 
     \sum_{i \in [n]} z_{ij} &= 1 \forall j,  \ \ 
     \sum_{j \in [n]} z_{ij} = 1 \forall i,  \ z_{ij} \in \{0, 1\} \forall i, j \\ 
@@ -216,19 +260,20 @@ because there is a permutation-related structure in the polytope.
     \end{pmatrix} \\
  y &= \Pi^T S \Pi p 
 \end{align*}
-While $(z_{ij})$ again serves as the permutation matrix, another lower-triangular matrix $S$ is introduced to
-compute the completion time. Another difference is $\Pi^T$. Since the objective function is defined  
-for each plane, we need to map the completion time back to the original order.\\
-Luckily, the permutation matrix is doubly stochastic, so $\Pi^{-1} = \Pi^T$ saves us a lot of inverse matrix computation. 
+One special part of the formulation is $\Pi^T$, where the transpose 
+of the permutation matrix is used. This stems from the result in \ref{cor:inverse},
+where the inverse of a permutation matrix is its transpose.
 
-\paragraph{Convexity}
-Now that we have a correct mixed-integer formulation that seems easy to solve, we still need to check its convexity for 
-real computation with non-approximation, that is, changing the choice of $z_{ij}$
+\subsection{Convexity}
+Now that we have a correct formulation, we are ready to implement and execute some experiments.
+However, the given formulation serves as a mixed-integer nonlinear program. 
+For actual execution, we have first convert it into a non-integer program, and check its convexity afterwards.
+In a classical manner, the binary integer variables are relaxed to continuous variables.
 \begin{align*}
  z_{ij} \in [0, 1] \ \forall i, j
 \end{align*}
-The constraints are quadratic equalities, so we lose the convexity right away. 
-There are some ways to make them convex, by introducing inequalities. 
+There are also quadratic equality constraints, where we lose the convexity for the equal relation. 
+There are roundabouts to make them convex, by introducing inequalities. 
 \begin{align*}
  x_i y_i &\geq 1 \ \forall i \\
  y &\geq \Pi^T S \Pi p
@@ -236,14 +281,15 @@ There are some ways to make them convex, by introducing inequalities.
 In this way, we can obtain a feasible, convex, but unbounded area. 
 Unboundedness is another problem, for we are doing a maximization. 
 Unfortunately, we cannot solve the problem with this non-linear programming approach. 
+\textbf{DO I HAVE TO SHOW THE CONVEXITY HERE?}
 
-\paragraph{Simple Practical Experiments}
+\subsection{Simple Practical Experiments}
 Although the program is not convex, we can still run it in some scientific computing software.
 For software based on Disciplined Convex Programming, like CVXPY \cite{diamond2016cvxpy}, we cannot even run the program 
 because it has semantic checks on convexity. For software that does not require this check, like SCIP \cite{BolusaniEtal2024ZR}, the program 
 ends up in a dead loop without termination. 
 
-\subsection{Attempts with linear programming}
+\section{Attempts with linear programming}
 Since finding a convex formulation directly from permutahedra is impossible, 
 we wonder if we can find the polytope describing the solution vectors in a linear programming way.
 Without too many theoretical backgrounds, we decided to do some practical computation on those vertices.
@@ -265,17 +311,27 @@ vectors.
 This results in $n!$ vertices in $\R^n$. A straightforward traversal on the vertices is not 
 polynomial-time, but it may help us to find some polynomial-time structure within the polytope.
 
-\paragraph{Computation}
+\paragraph{Setups}
 For the computation of the polytope with vertices, we use the scientific computing software polymake \cite{assarf2017computing}.
 Polymake is a software that can compute the convex hull of a set of points in $\R^n$. 
 The computation was run on a private computer with Intel i5-12600k CPU with 16 GB RAM. 
 
-\paragraph{Results}
+\subsection{First Computation}
 Although the computation of the polytope is polynomial-time in the number of vertices, our computation takes 
-a significant amount of time. The reason is that the number of vertices is factorial in $n$. 
-The computation of a 7-dimensional polytope does not terminate within 24 hours. Thus, we establish a large amount of 
-computation only in $n = 4$ and $n = 5$. We also tried some computation for $n = 6$, but a large amount of computation 
-is not applicable. 
+a significant amount of time. The reason is that the number of vertices is exponential in $n$. 
+For the first few dimensions, the computation was quick and the results were as expected.
+When we come to the fifth dimension, the computation takes a few seconds, while the sixth dimension 
+takes around 1 minute to terminate. The computation of a 7-dimensional polytope does not terminate within 24 hours. 
+This largely stops us from further computation in even higher dimensions. 
+Luckily, we have obtained some raw data of the first 6 dimensions. 
+The number of facets do not resemble a polynomial growth, hence we would expect an exponential growth in this case.
+
+\subsection{Mass Computation for patterns}
+The exponential growth of facets does not mean an expential decision prodecure for the polytope. 
+Our second trial serves as mass computation in lower dimensions, where we want to obtain 
+as many data as possible. Based on those data, we would like to find a pattern in 
+the number of facets. Thus, we establish a large amount of 
+computation in $n = 4$ and $n = 5$. Some direct oberservations are shown in the following table. 
 \begin{table}[ht]
     \centering
     \begin{tabular}{||c | c | c ||}
@@ -298,12 +354,11 @@ is not applicable.
 \end{table}
 Starting from $n = 4$, the number of facets is no longer unique. 
 Hence, we guess that the number of facets is somehow related to the input chosen. 
-Unfortunately, a direct pattern was not observed for $n=5$. 
-Based on the data we have obtained, we might guess that the growth of the number of facets is exponential in $n$. 
-We would then want to use basic machine-learning techniques to see if we can find a pattern in the data.
+Unfortunately, a direct pattern was not observed for $n=5$.
+One interesting case for $n = 4$ is when the number of facets is 67. Elaborate more ...
 
-
-\paragraph{Patterns by Machine Learning}
+\subsection{Patterns by Machine Learning}
+Since no direct pattern was observed, we would like to use machine learning techniques to find a pattern in the data.
 Both supervised and unsupervised learning techniques were exploited to find the pattern in the data. 
 We focus on the case of $n = 4$, where the unique number of facets is few, and the data are easy to visualize.
 We randomly generate each input of $v \in \R^4$ and call the Polymake interface for the polytope. In the end, 
@@ -318,8 +373,10 @@ Here are some results
     \item Clustering: The data were clustered into 2 or 3 clusters, but the clusters do not have a clear meaning.
     \item Trees models: Tree-based models work best, but the tree's visualization is unclear, and we don't see much meaning behind it.
 \end{enumerate}
-In conclusion, the basic machine learning techniques need to work better on the data. Another possibility is 
-deep learning, which works well in predicting the number of facets. In addition, it could work well on the non-linear formulation we proposed in the first attempt.
+In conclusion, the tree models tend to work better on the data, but due to the lack of features,
+we cannot draw direct conclusion on the how the patterns can be discovered inside the data.
+The fundamental machine learning techniques did not help us to discover the pattern, one 
+would also consider deep learning techniques for this problem.
 
 \paragraph{Visualization and Discoveries}
 Aside from machine learning, we also visualized the data to see if any pattern was observed, as shown in the figure below. 
@@ -339,7 +396,8 @@ $x_i - x_j = 0$. This separation is a valuable property and an interesting techn
 endeavors to research it.
 
 \subsection{Formulation with Vasquez's Idea}
-Vasquez's research \cite{vasquez2015airplane} on this problem was also studied carefully during this project. 
+As an introduction, Vasquez's research \cite{vasquez2015airplane} on this problem was carefully studied 
+in the early phase of this project. Later on, we re-dived into the paper for inspirations.
 We also attempted to find a formulation based on his idea, but there was no success or flawed formulation. 
 Hence, we do not bother to go into details. 
 
