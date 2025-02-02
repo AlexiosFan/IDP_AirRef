@@ -76,14 +76,14 @@ In our problem, we can view $\sigma$ as permutation $\pi$, the reverse of orderi
 \begin{align*}
     \sum_{j=1}^{n} \dfrac{w_{\sigma(j)}}{\sum_{k = j}^n p_{\sigma(k)}} = \sum_{j = 1}^n \dfrac{w_{\pi(j)}}{\sum_{k = 1}^j p_{\pi(k)}}
 \end{align*}
-Replacing the sum of processing time with completion time, we obtain a cost function $f(\pi, j) := C_{\pi(j)}$
+Replacing the sum of processing time with completion time, we obtain a cost function $f(\pi, j) := 1 / C_{\pi(j)}$
 and the objective function in a simpler form.
 \begin{align*}
     \sum_{j = 1}^n \dfrac{w_{\pi(j)}}{\sum_{k = 1}^j p_{\pi(k)}} = \sum_{j = 1}^n \dfrac{\pi(j)}{C_{\pi(j)}} =  \sum_{j = 1}^n \dfrac{w_{j}}{C_j}
 \end{align*}
 With all premises explained, we can finally introduce a mathematical programming formulation. Note that $S_n$ stands for the permutation group of order $n$. 
 \begin{align*}
-    &\max w^T \cdot x \label{eq:linobj} \tag{B} \\ 
+    &\max w^T \cdot x \label{eq:linobj} \tag{A} \\ 
     \text{s. t.\ }& C_{\pi(j+1)} - C_{\pi(j)} = p_{\pi(j)} \forall j \\
     & \pi \text{ is a permutation} \\ 
     & x_j = \dfrac{1}{C_j} \ \ \forall j \in [n] 
@@ -118,17 +118,26 @@ There are two ways to describe a polytope.
     \end{align*}
 \end{enumerate}
 It is known that the two representations are equivalent. 
+This is a classical result that can found in many textbooks. 
+Hence, we omit the proof for it. 
 \begin{theorem}
     \label{thm:polytope}
     For each polytope $\Poly$ in $\R^n$, there is an $H$-polytope $\Poly$'s 
     describing exactly the same polytope as $\Poly$ and vice versa.
 \end{theorem}
-In practice, theorem \ref{thm:polytope} is the theoretical basis for us to 
-compute the convex hull of solution vectors as a set of inequalities.
+Recall that we are able to generate a convex hull of a given set of vectors with 
+the given inputs of the scheduling problem. This is a $V$-representation of the polytope.
+Given Theorem \ref{thm:polytope}, we are interested in an $H$-representation of the same polytope.
+More specifically, is there a generalized $H$-representation that is computable in polynomial time 
+in the number of dimensions? 
+To answer this question, we took a closer look at 
+a few concrete examples in section 3.
 
 
 \subsection{Permutation Matrices}
-Before we take a closer look at permutahedra, we need to introduce permutation matrices.
+In addition to the two representations of the polytope, we also found a special type of polytope 
+in literature review and deemed it helpful for our problem. Before introducing this polytope in details, 
+we first introduce the concept of permutation matrices.
 \begin{definition}
     A permutation matrix $M \in \R^{n \times n}$ is a square binary matrix describing a permutation $\pi$.
     For each entry $m_{ij}$ of $M$, the following constraints must hold.
@@ -137,6 +146,7 @@ Before we take a closer look at permutahedra, we need to introduce permutation m
         \item $\sum_{i = 1}^n m_{ij} = 1$, for all $j$
         \item $\sum_{j = 1}^n m_{ij} = 1$, for all $i$
     \end{enumerate}
+    For simplicity, we denote $m_{ij} = 1$ as 1-entry while $m_{ij} = 0$ as 0-entry in the permutation matrix.
 \end{definition}
 First, we show that there is a bijective relationship between permutation matrices and permutations, i.e. permutation matrices 
 can be used to describe permutations.
@@ -148,10 +158,25 @@ can be used to describe permutations.
     \begin{align*}
         m_{ij} = 
         \begin{cases}
-            1 & \text{if } \pi(j) = i \\
+            1 & \text{if } \pi(i) = j \\
             0 & \text{otherwise}
         \end{cases}
     \end{align*}
+    We start with \textbf{injectivity}. Without loss of generality, assume there are two distinct permutations $\pi$, $\pi'$ and conrrespondingly 
+    constructed permutation matrices $M$, $M'$. We show that $M \neq M'$. Suppose for contradiction that $M = M'$.
+    Then, for each $m_{ij} = 1$ it follows $\pi(i) = j$ and $\pi'(i) = j$. Analogously, for each $m_{ij} = 0$, it holds $\pi(i) \neq j$ and $\pi'(i) \neq j$.
+    This implies $\pi(i) = \pi'(i)$ for all $i \in [n]$. It follows $\pi = \pi'$, which is a contradiction. \\\\
+    Then, we show $\textbf{surjectivity}$. Again, suppose for contradiction that there exists a permutation matrix $M$ such that 
+    it cannot be constructed from any permutation $\pi$. \\
+    By the first constraint in definition, each entry in $M$ is either zero or one. Furthermore, 
+    the second and the third constraints imply that there is exactly one 1-entry in each row and each column,
+    otherwise the row sum or column sum would be strictly greater than one.
+    This allows us to reconstruct a permutation $\pi$, where $M$ can be constructed from. 
+    \begin{align*}
+        \pi(i) = j \text { if } m_{ij} = 1
+    \end{align*}
+    The construction is well-defined, because $m_{ik} = 0$ for all $k \neq j$ and $m_{ij} = 0$.
+    This is a contradiction, and we conclude can conclude the \textbf{bijectivity}.
 \end{proof}
 A property of permutation matrices is that they are doubly stochastic, i.e., the sum of each row and each column is 1.
 In the special case of permutation matrices, the matrix is also orthogonal.
@@ -164,11 +189,13 @@ In the special case of permutation matrices, the matrix is also orthogonal.
         (MM^T)_{ij} = \sum_{k = 1}^n m_{ik}m_{jk}
     \end{align*}
     If $i \neq j$, then we are summing up the product of entries in two different rows. 
-    Since there is only one entry equal to one in each column, the products are all zero. Hence, their sum is also zero. \\ 
-    If $i \neq j$, then we are summing up the product of entries in the same row.
-    There is only one entry equal to one in each row, so the product is one. \\
+    Observe that the 1-entries in two different rows are not in the same column.
+    Since there is only one 1-entry in each column, the products are all zero. Hence, their sum is also zero. \\ 
+    If $i = j$, then we are summing up the product of entries in the same row.
+    There is only one 1-entry in each row, so the product is one. \\
     In conclusion, the matrix product is the identity matrix, and $M$ is orthogonal.
 \end{proof}
+Directly from orthogonality, we can derive the inverse of a permutation matrix.
 \begin{corollary}
     \label{cor:inverse}
     If $M$ is a permutation matrix, then $M^{-1} = M^T$.
@@ -177,21 +204,20 @@ In the special case of permutation matrices, the matrix is also orthogonal.
 
 \subsection{Permutahedron}
 A permutahedron is a polytope that is the convex hull of all vertices representing a permutation i.e. $\{(\pi(1), \pi(2), \cdots, \pi(k) | \pi \in S_n) \}$. \cite{doi:10.1137/0122054}
-In the permutahedron of the $n$-th order $P_n$, each vertex is a permutation of $n$ elements.
-Hence, there are $n!$ many vertices in $P_n$. For example, a hexagon is a second-order permutahedron. 
-First, we take a look at a simple LP formulation of permutahedra. 
+In the permutahedron of the $n$-dimension $P_n$, each vertex is a permutation of $n$ elements.
+Hence, there are $n!$ many vertices in $P_n$. For example, a hexagon is a three-dimensional permutahedron. 
+First, we take a look at a simple LP formulation of permutahedra, provided by Bowman and Joseph. \cite{bowman1972permutation}
 \begin{align*}
     \sum_{i \in S} x_i = \sum_{k = n - |S| + 1}^n k, \ \ \forall \emptyset \neq S \subset [n]
 \end{align*}
-We need $2^n - 2$ facets to define the polytope.
-\\
+We need $2^n - 2$ facets to define the polytope.\\
 Although the number of faces is not polynomial in $n$,
-some symmetric properties were discovered and are useful for optimization. Some researchers\textbf{cite later}
-have found an extended formulation $\R^{k^2+k} \rightarrow \R^{k}$, which allows us 
-to solve the LP on $P_k$ in polynomial time. 
+some symmetric properties were discovered and are useful for optimization. Some researchers \cite{bowman1972permutation}
+have found an extended formulation $\R^{n} \rightarrow \R^{n^2 + n}$, which allows us 
+to solve the LP on $P_n$ in polynomial time. 
 
 \begin{align}
-    &\sum_{j \in [n]} y_{ij} = 1, \ \ \forall i \in [n], \sum_{i \in [n]} y_{ij} = 1, \ \ \forall j \in[n] \label{eq:C} \tag{C} \\ 
+    &\sum_{j \in [n]} y_{ij} = 1, \ \ \forall i \in [n], \sum_{i \in [n]} y_{ij} = 1, \ \ \forall j \in[n] \label{eq:C} \tag{B} \\ 
     &y_{ij} \geq 0, \ \ \forall i, j \in [n] \nonumber 
 \end{align}
 The trick is the permutation matrix. We show that this is a formulation of the 
@@ -213,7 +239,7 @@ convex hull of all permutation metrices.
     \end{align*}
     We may conclude that $Y$ is in the polytope described by \ref{eq:C}. \\
     $\implies$: Let $Y$ be a feasible solution to constraints in \ref{eq:C}. 
-    We observe that $Y$ is doubly stochastic. It is shown by Birkhoff's theorem \textbf{cite Birkhoff} that 
+    We observe that $Y$ is doubly stochastic. It is shown by Birkhoff's Theorem \cite{jurkat1967term} that 
     $Y$ is a convex combination of permutation matrices. 
 \end{proof}
 
@@ -221,11 +247,152 @@ As a consequence, we can obtain the vertices representing the permutations by
 \begin{align*}
     x_i = \sum_{j = 0}^n j \cdot y_{ij} \forall i \in[n]
 \end{align*}
-In this way, we are able to reduce the number of constraints to $n^2 + 3n$ under $R^{n^2 + n}$.
-This extended formulation is helpful in terms of both linear programming and non-linear programming. 
+In this way, we are able to reduce the number of constraints to $n^2 + 3n$ under $\R^{n^2 + n}$.
+We will show how this approach of extended formulation helped us in Section 4. 
+
+\section{Attempts with linear programming}
+As a start of this project, 
+we explored the possibility of find the $H$-representation of the given polytope $\Poly$
+given the $V$-representation of it. 
+As the description of the scheduling problem does not contain any vertices, our first step is 
+generating the $V$-represention. 
+
+\paragraph{Setups}
+For the computation of the polytope with vertices, we use the scientific computing software polymake \cite{assarf2017computing}.
+Polymake is a software that can compute the $H$-representation of a polytope given the $V$-representation. 
+All other data processing, data analytics and machine learning tasks were done with Python.
+The computation was run on a private computer with Intel i5-12600k CPU and 16 GB RAM. 
+
+
+\subsection{Input Generation}
+Since the completion time is based on the permutation $\pi$, we need a few steps to generate all possible 
+vectors. 
+\begin{enumerate}
+    \item Generate a randomized/special processing time $p_j$
+    \item Pick a permutation $\pi$, arrange the consumption time in the order of $\pi$
+    \item Compute the completion time by $C_1 = p_1$ and $C_{i+1} = C_i + p_{i+1}$
+    \item Compute the inverse of $C_j$
+    \item Repeat until all permutations are visited
+\end{enumerate}
+This results in $n!$ vertices in $\R^n$. A straightforward traversal on the vertices is not 
+polynomial-time, but it may help us to find potentially polynomial-time $H$-representation within the polytope $\Poly$.
+
+\subsection{First Computation}
+\paragraph{Direct Observations}
+Having tested a few randomly generated inputs, we have made some direct observations.
+When several identical processing times are generated, the number of facets is largely reduced.
+Suppose $n$ processing times were generated, while there were only $m$ unique values. 
+The resulting polytope can be reduced to a polytope in $\R^m$.\\
+The reason is also straightforward. If two identical values were generated, 
+the number of unique solution vectors will also be reduced. Let $i$ and $j$ be 
+arbitrary indices such that $p_i = p_j$. For each value of $C_i$ in permutation $\pi$, 
+there is a $C'_j$ of the same value in another permutation $\pi'$. 
+$C'_j$ and $\pi'$ can be generated by simply swapping $i$ and $j$ in the permutation $\pi$. \\
+In conclusion, it makes sense that our computational experiments should be based 
+on the number of unique values in the processing time. 
+Thus, we only generated unique processing times in the following experiments. 
+
+\paragraph{Running Time in Practice}
+Although the computation time of the $H$-representation is polynomial in the number of vertices, our computation takes 
+a significant amount of time. The reason is that the number of vertices is exponential in $n$. 
+For the first few dimensions, the computation was quick and the results were as expected.
+When we come to the fifth dimension, the computation takes a few seconds, while the sixth dimension 
+takes around 1 minute to terminate. The computation of a 7-dimensional polytope does not terminate within 24 hours. 
+This largely stops us from further computation in even higher dimensions. 
+Luckily, we have obtained some raw data of the first 6 dimensions. 
+The number of facets do not resemble a polynomial growth, hence we would expect an exponential growth in this case.
+
+ 
+\subsection{Mass Computation for patterns}
+The exponential growth of facets does not mean an exponential decision prodecure for the polytope. 
+Our second trial serves as mass computation in lower dimensions, where we want to obtain 
+as many data as possible. In total, we have generated 10,000 inputs for 4-dimensional cases, 
+and 1,000 inputs for 5-dimensional cases. \\
+Based on those data, we would like to find a pattern in 
+the number of facets. Thus, we establish a large amount of 
+computation in $n = 4$ and $n = 5$. Some direct oberservations are shown in the following table. 
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{||c | c | c ||}
+        \hline 
+        $n$ & Number of Facets & Number of Unique Values\\
+        \hline 
+        \hline 
+ 2 & 2 & 1\\
+        \hline 
+ 3 & 8 & 1\\
+        \hline 
+ 4 & 67, 68, 69, 70 & 4\\
+        \hline 
+ 5 & $700 \sim 800$ & $\geq 66$\\
+        \hline 
+ 6 & $10000 \sim 12000$  & Unknown\\
+        \hline 
+    \end{tabular}
+    \caption{Number of facets in the polytope for $n \leq 6$}
+\end{table}
+Starting from $n = 4$, the number of facets is no longer unique. 
+Hence, we guess that the number of facets is somehow related to the input chosen. 
+Unfortunately, a direct pattern was not observed for $n=5$.
+One interesting case for $n = 4$ is when the number of facets is 67.
+Among 10,000 inputs, only one input results in 67 facets. 
+
+\paragraph{A Special Input}
+We would like elaborate on this case to explain what we have observed.
+The generated input for this 4d case is
+\begin{align*}
+    p_0 = (26, 35, 53, 79)
+\end{align*}
+By brute-force, we are able to obtain all possible values for each in dimension in 
+our polytope. One numerical observation is $26+53 = 79$. If we recall 
+the direction observation in the previous part, the same values on different dimensions 
+reduces the complexity of the polytope. In our results, the number of unique vectors is not reduced.
+However, such relations reduces the number of higher dimensional faces. 
+As a result, we have fewer facets.\\
+Then we also tried to reproduce this result, it was discovered that the vector $p$ 
+in satisfying the following property will result in the exactly 67 facets.
+\begin{align*}
+    p = (a, b, 3b - 2a, 3b - a)
+\end{align*}
+One simplest example is $p = (1, 2, 4, 5)$. 
+We still fail to derive more general results from this observation.
+
+
+\subsection{Machine Learning, Visualization and Discoveries}
+Since no direct pattern was observed, we would like to use machine learning techniques to find a pattern in the data.
+Both supervised and unsupervised learning techniques were exploited to find the pattern in the data. 
+We focus on the case of $n = 4$, where the unique number of facets is few, and the data are easy to visualize.
+We randomly generate each input of $v \in \R^4$ and call the Polymake interface for the polytope. In the end, 
+we also process that data such that each dimension is a ratio between its original value and the first dimension. 
+\begin{align*}
+ (v_1, v_2, v_3, v_4) \rightarrow \left(1, \frac{v_2}{v_1}, \frac{v_3}{v_1}, \frac{v_4}{v_1} \right)
+\end{align*}
+We applied regressions, discriminant analysis, tree-based models on the data. 
+None of them proved to generate promising results. \\\\
+
+Aside from machine learning, we also visualized the preprocessed data to see 
+if any pattern was observed, as shown in the figure below. 
+A clear separation can be witnessed, but we cannot find a smooth curve separating the data, for outliers reside 
+in the middle of the other category. 
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[scale=0.6]{3d_plot.png}
+\end{figure*}
+On the other hand, we also observed an interesting property through visualization. If we consider a solution vector 
+\begin{align*}
+ s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n} \right)
+\end{align*}
+For every two dimensions $ i \neq j$, the volume of the $i-$th plane is consumed before the $j-$th plane, or vice versa.
+Formally speaking, either $C_1 < C_2$ or vice versa, and there is an equal amount of them, separated by the hyperplane 
+$x_i - x_j = 0$. This separation is a valuable property and an interesting technique called \textbf{hyperplane arrangements} 
+endeavors to research it. Unfortunately, we have not found a direct application of this technique that is useful for our problem.
+
 
 \section{Attempts with non-linear programming}
-Inspired by the permutahedron, we want to find a similar formulation for the polytope of the completion time,
+Since we failed to find a direct pattern of $H$-representation with linear programming, 
+we returned to the original formalisation of them problem, and would like to 
+find an equivalent convex formulation of the problem.
+Inspired by the permutahedron, we wanted to find a similar formulation for the polytope of the completion time,
 because there is a permutation-related structure in the polytope. 
 
 \subsection{Formulation}
@@ -275,7 +442,7 @@ In addition, we retain the permutation matrix as shown in \ref{eq:C}.
 For naming conventions of variables, we use $y_i$ for completion and $z_i$ for permutation matrices 
 in the following formulation.
 \begin{align*}
-    \max w^Tx& \text{ s.t. } \label{eq:D} \tag{D} \\
+    \max w^Tx& \text{ s.t. } \label{eq:D} \tag{C} \\
  x_i y_i &= 1 \ \forall i, \ \ y \geq 0, \\ 
     \sum_{i \in [n]} z_{ij} &= 1 \forall j,  \ \ 
     \sum_{j \in [n]} z_{ij} = 1 \forall i,  \ z_{ij} \in \{0, 1\} \forall i, j \\ 
@@ -367,10 +534,10 @@ In this way, we can obtain a feasible, convex, but \textbf{unbounded} area.
     which is a contradiction. Hence, the feasible area is unbounded.
 \end{proof}
 
-\textbf{Unboundedness} is another problem, for we objective function is maximized. 
-Thus, any attempts on convex optimization would maximize the objective function to infinitely.
+\textbf{Unboundedness} is another problem, because we objective function is maximized. 
+Thus, any attempts on convex optimization would maximize the objective function to infinity.
 This discovery also hints that relaxing this non-convex problem 
-to a convex version might always result in an unbounded feasible area.
+to a convex version might result in an unbounded feasible area.
 Unfortunately, we cannot solve the problem with this non-linear programming approach. 
 
 \subsection{Simple Practical Experiments}
@@ -379,186 +546,30 @@ For software based on Disciplined Convex Programming, like CVXPY \cite{diamond20
 because it has semantic checks on convexity. For software that does not require this check, like SCIP \cite{BolusaniEtal2024ZR}, the program 
 ends up in a dead loop without termination. 
 
-\section{Attempts with linear programming}
-Since finding a convex formulation directly from permutahedra is impossible, 
-we wonder if we can find the polytope describing the solution vectors in a linear programming way.
-Without too many theoretical backgrounds, 
-we decided to do some practical computation on those vertices.
-
-\paragraph{Setups}
-For the computation of the polytope with vertices, we use the scientific computing software polymake \cite{assarf2017computing}.
-Polymake is a software that can compute the $H$-representation of a polytope given the $V$-representation. 
-The computation was run on a private computer with Intel i5-12600k CPU with 16 GB RAM. 
-
-
-\subsection{Input Generation}
-As we have analyzed in the first attempt, we want to compute the convex hull of all solution vectors.
-We name the polytope describing this convex hull as $\Poly$.
-\begin{align*}
- s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n} \right)
-\end{align*}
-Since the completion time is based on the permutation $\pi$, we need a few steps to generate all possible 
-vectors. 
-\begin{enumerate}
-    \item Generate a randomized/special processing time $p_j$
-    \item Pick a permutation $\pi$, arrange the consumption time in the order of $\pi$
-    \item Compute the completion time by $C_1 = p_1$ and $C_{i+1} = C_i + p_{i+1}$
-    \item Compute the inverse of $C_j$
-    \item Repeat until all permutations are visited
-\end{enumerate}
-This results in $n!$ vertices in $\R^n$. A straightforward traversal on the vertices is not 
-polynomial-time, but it may help us to find some polynomial-time structure within the polytope $\Poly$.
-
-\subsection{First Computation}
-\paragraph{Direct Observations}
-Having tested a few randomly generated inputs, we have made some direct observations.
-When several identical processing times are generated, the number of facets is largely reduced.
-Suppose $n$ processing times were generated, while there were only $m$ unique values. 
-The resulting polytope can be reduced to a polytope in $\R^m$.\\
-The reason is also straightforward. If two identical values were generated, 
-the number of unique solution vectors will also be reduced. Let $i$ and $j$ be 
-arbitrary indices such that $p_i = p_j$. For each value of $C_i$ in permutation $\pi$, 
-there is a $C'_j$ of the same value in another permutation $\pi'$. 
-$C'_j$ and $\pi'$ can be generated by simply swapping $i$ and $j$ in the permutation $\pi$. \\
-In conclusion, it makes sense that our computational experiments should be based 
-on the number of unique values in the processing time. 
-Thus, we only generated unique processing times in the following experiments. 
-
-\paragraph{Running Time in Practice}
-Although the computation of the polytope is polynomial-time in the number of vertices, our computation takes 
-a significant amount of time. The reason is that the number of vertices is exponential in $n$. 
-For the first few dimensions, the computation was quick and the results were as expected.
-When we come to the fifth dimension, the computation takes a few seconds, while the sixth dimension 
-takes around 1 minute to terminate. The computation of a 7-dimensional polytope does not terminate within 24 hours. 
-This largely stops us from further computation in even higher dimensions. 
-Luckily, we have obtained some raw data of the first 6 dimensions. 
-The number of facets do not resemble a polynomial growth, hence we would expect an exponential growth in this case.
-
- 
-\subsection{Mass Computation for patterns}
-The exponential growth of facets does not mean an expential decision prodecure for the polytope. 
-Our second trial serves as mass computation in lower dimensions, where we want to obtain 
-as many data as possible. In total, we have generated 10,000 inputs for 4-dimensional cases, 
-and 1,000 inputs for 5-dimensional cases. \\
-Based on those data, we would like to find a pattern in 
-the number of facets. Thus, we establish a large amount of 
-computation in $n = 4$ and $n = 5$. Some direct oberservations are shown in the following table. 
-\begin{table}[ht]
-    \centering
-    \begin{tabular}{||c | c | c ||}
-        \hline 
-        $n$ & Number of Facets & Number of Unique Values\\
-        \hline 
-        \hline 
- 2 & 2 & 1\\
-        \hline 
- 3 & 8 & 1\\
-        \hline 
- 4 & 67, 68, 69, 70 & 4\\
-        \hline 
- 5 & $700 \sim 800$ & $\geq 66$\\
-        \hline 
- 6 & $10000 \sim 12000$  & Unknown\\
-        \hline 
-    \end{tabular}
-    \caption{Number of facets in the polytope for $n \leq 6$}
-\end{table}
-Starting from $n = 4$, the number of facets is no longer unique. 
-Hence, we guess that the number of facets is somehow related to the input chosen. 
-Unfortunately, a direct pattern was not observed for $n=5$.
-One interesting case for $n = 4$ is when the number of facets is 67.
-Among 10,000 inputs, only one input results in 67 facets. 
-
-\paragraph{A Special Input}
-We would like elaborate on this case to explain what we have observed.
-The generated input for this 4d case is
-\begin{align*}
-    p_0 = (26, 35, 55, 81)
-\end{align*}
-By brute-force, we are able to obtain all possible values for each in dimension in 
-our polytope. One numerical observation is $26+53 = 79$. If we recall 
-the direction observation in the previous part, we can see this might result in 
-a reduction in the number of solution vectors. In our results, the number of unique vectors is not reduced.
-However, such relations reduces the number of higher dimensional faces. 
-As a result, we have fewer facets.\\
-Then we also tried to reproduce this result, it was discovered that the vector $p$ 
-in satisfying the following property will result in the exactly 67 facets.
-\begin{align*}
-    p = (a, b, 3b - 2a, 3b - a)
-\end{align*}
-One simplest example is $p = (1, 2, 4, 5)$. 
-We still fail to derive more general results from this observation.
-
-\subsection{Patterns by Machine Learning}
-Since no direct pattern was observed, we would like to use machine learning techniques to find a pattern in the data.
-Both supervised and unsupervised learning techniques were exploited to find the pattern in the data. 
-We focus on the case of $n = 4$, where the unique number of facets is few, and the data are easy to visualize.
-We randomly generate each input of $v \in \R^4$ and call the Polymake interface for the polytope. In the end, 
-we also process that data such that each dimension is a ratio between its original value and the first dimension. 
-\begin{align*}
- (v_1, v_2, v_3, v_4) \rightarrow \left(1, \frac{v_2}{v_1}, \frac{v_3}{v_1}, \frac{v_4}{v_1} \right)
-\end{align*}
-Here are some results
-\begin{enumerate}
-    \item Linear Regression: The regression models do not fit well; we only obtain an accuracy barely above $0.5$.
-    \item Logistic Regression: slightly better than linear regression, but still not good enough.
-    \item Discriminant Analysis: We do not infer the column dependency to linear, so quandratic discriminant analysis was experimented.
-    However, the approach is not really suitable for multimonial classification.
-    \item Trees models: Tree-based models work best, but the tree's visualization is unclear, and we don't see much meaning behind it.
-\end{enumerate}
-In conclusion, the tree models tend to work better on the data, but due to the lack of features,
-we cannot draw direct conclusion on the how the patterns can be discovered inside the data.
-The fundamental machine learning techniques did not help us to discover the pattern, one 
-would also consider deep learning techniques for this problem.
-
-\subsection{Visualization and Discoveries}
-Aside from machine learning, we also visualized the data to see if any pattern was observed, as shown in the figure below. 
-A clear separation can be witnessed, but we cannot find a smooth curve separating the data, for outliers reside 
-in the middle of the other category. 
-\begin{figure*}[ht]
-    \centering
-    \includegraphics[scale=0.6]{3d_plot.png}
-\end{figure*}
-On the other hand, the data themselves also yield interesting properties. If we consider a solution vector 
-\begin{align*}
- s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n} \right)
-\end{align*}
-For every two dimensions $ i \neq j$, the volume of the $i-$th plane is consumed before the $j-$th plane, or vice versa.
-Formally speaking, either $C_1 < C_2$ or vice versa, and there is an equal amount of them, separated by the hyperplane 
-$x_i - x_j = 0$. This separation is a valuable property and an interesting technique called \textbf{hyperplane arrangements} 
-endeavors to research it. We also tried a greedy algorithm on based on this discovery, but the results 
-were not satisfactory. The greedy search does not yield the exact solution already in the 6-dimensional case.
-\textbf{EXPAND FOR DETAILS IN GREEDY SEARCH?}
-
-\subsection{Formulation with Vasquez's Idea}
-As an introduction, Vasquez's research \cite{vasquez2015airplane} on this problem was carefully studied 
-in the early phase of this project. Later on, we re-dived into the paper for inspirations.
-We also attempted to find a formulation based on his idea, but there was no success or flawed formulation. 
-Hence, we do not bother to go into details. 
-
 \section{Summary}
 In this project, we reviewed a few pieces of literature on the airplane refueling problem and 
 attempted to find a mathematical programming formulation for the problem. 
 We gave a valid formulation, but it was not convex, and we were not able to solve it in polynomial time. 
 This intractability is also evidence showing that this direction may not work.
 \begin{enumerate}
-    \item On the one hand, if we try to formulate this problem as a non-linear program problem, we end up 
+    \item On the one hand, if we try to find a linear programming formulation, in other words, an $H$-representation, 
+ it takes us exponential time to compute all facets. 
+    \item On the other hand, if we try to formulate this problem as a non-linear program problem, we end up 
  with a maximization problem over an unbounded convex feasible area or a bounded non-convex area. 
-    \item On the other hand, if we try to find a linear programming formulation, in other words, a describing polytope, 
- it takes us exponential time to compute all facets in exchange for facets. 
 \end{enumerate}
-We can observe the first point from the first attempt on permutahedra, and we want to elaborate on the second point. 
+We can observe the second point from permutahedra, and we want to elaborate on the first point. 
 Suppose we introduce one hyperplane for each constraining curve from \ref{eq:C}, we end up with polynomially many hyperplanes. 
-However, we must compute each intersection, resulting in $n!$ many vertices and naturally exponential growth. 
-
-Ultimately, we also want to point out other possibilities we have experimented with.
+However, we must compute each intersection of curves. Since vertices are primarily also intersections, 
+we would expect an exponential number of intersections, given that we already have $n!$ many vertices. 
+Ultimately, we also want to point out other possibilities that may be worth trying in future works.
 \begin{itemize}
     \item Extended formulation. As discussed in the previous section, more complex extended formulations may help solve this 
  problem. 
     \item Hyperplane Arrangements. Recall the results from data processing; we can witness a clear separation of vertices in the vector. 
  This property may be helpful for hyperplane arrangements, but there is no direct existing research from this aspect. 
-    \item Deep Learning. Deep learning is always helpful in prediction. It may be helpful in predicting the number of facets or in the
- computation of our mathematical program. However, the interpretation of those results in formal mathematics remains a challenge. 
+    \item Deep Learning. In some cases of non-convex probelms, deep learning is helpful in finding the exact solution. 
+    It may be helpful in predicting the number of facets or in the  computation of our mathematical program. 
+    However, the interpretation of the deep learning results in formal mathematics remains a challenge. 
 \end{itemize}
 
 \bibliographystyle{plain}
