@@ -17,7 +17,8 @@
 
 \newcommand*{\bigo}{\mathcal{O}}
 \newcommand*{\R}{\mathbb{R}}
-\newtheorem{theorem}{theorem}[section]
+\newcommand{\Poly}{\mathcal{P}}
+\newtheorem{theorem}{Theorem}[section]
 \newtheorem{definition}[theorem]{Definition}
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{corollary}[theorem]{Corollary}
@@ -37,69 +38,94 @@
 The Airplane Refueling Problem is a combinatorial problem that is 
 neither known to be NP-complete nor polynomially solvable. 
 It reflects a real-life problem, where a fleet of airplanes refuels each other 
-to maximize the flying distance. Formally, we give the following definition. 
+to maximize the flying distance. The earliest mention of this problem stems 
+from \textit{Puzzle-Math} \cite{gamow1958puzzle} by George Gamow and Marvin Stern published in 1958.    
+Woeginger introduced the a formalization of this problem, 
+we present a definition based on his work. \cite{woeginger2010scheduling}
 \begin{definition}
- Given $n$ planes each with a tank $w_j$ and consumption rate $p_j$,
- what is the longest time/distance that this fleet of planes can fly with full tanks,
+ Given $n$ planes each with a volume $w_j$ and consumption rate $p_j$,
+ what is the longest time/distance that this fleet of planes can fly with full volumes,
  if they can refuel each other?
 \end{definition}
-An intuitive idea is consuming the tank of only one plane 
-at a time, and dropping it out after its tank is empty. This approach 
+An intuitive idea is consuming the volume of only one plane 
+at a time, and dropping it out after its volume is empty. This approach 
 finds a \textit{drop out ordering} $\sigma$
 that maximizes the objective function 
 \begin{align*}
     \max \sum_{j=1}^{n} \dfrac{w_{\sigma(j)}}{\sum_{k = j}^n p_{\sigma(k)}}
 \end{align*}
 To elaborate on this objective function, only the planes with indexing no less than $j$ in order $\sigma$
-are consuming the tank of the $j$-th plane. Thus, the time until the $j$-th plane is fully consumed is 
+are consuming the volume of the $j$-th plane. Thus, the time until the $j$-th fuel is fully consumed is 
 \begin{align*}
     \dfrac{w_{\sigma(j)}}{\sum_{k = j}^n p_{\sigma(k)}}
 \end{align*}
 while the sum of all these times is the objective maximization function.
 
 \subsection{Scheduling and Mathematical Programming}
-Based on understaning mentioned above, Woeginger et al. formalized this problem as a scheduling problem. \cite{woeginger2010scheduling}
-In the scheduling context, we view $\sigma$ as permutation $\pi$, the reverse of ordering.
-We can also change the objective function to a simpler form. 
+Based on understaning mentioned above, Wiebke Höhn introduced a formalisation of this problem as a scheduling problem. \cite{hohn2015performance}
+We would briefly introduce the scheduling problem, and explain how the problem fits in this context. 
+\begin{definition}
+    Given a cost function $f$ and a sequence of $n$ jobs, each with processing time $p_j$ and weight $w_j$, how to find a permutation $\pi$
+    such that the objective function $\sum_{j = 1}^{n} w_j f(\pi, j)$ is minimized or maximized? 
+\end{definition}
+For simplicity, we also introduce the completion time $C_j$, i.e. the time until the $j$-th plane is consumed given permutation $\pi$.
+\begin{align*}
+    C_j = \sum_{k = 1}^j p_{\pi(k)}
+\end{align*}
+In our problem, we can view $\sigma$ as permutation $\pi$, the reverse of ordering.
 \begin{align*}
     \sum_{j=1}^{n} \dfrac{w_{\sigma(j)}}{\sum_{k = j}^n p_{\sigma(k)}} = \sum_{j = 1}^n \dfrac{w_{\pi(j)}}{\sum_{k = 1}^j p_{\pi(k)}}
 \end{align*}
-where $p$ stands for the processing time of the $j$-th job now. 
-For simplicity, we also introduce the completion time $C_j$
-that is, 
-the time until the $j$-th plane is consumed.
+Replacing the sum of processing time with completion time, we obtain a cost function $f(\pi, j) := C_{\pi(j)}$
+and the objective function in a simpler form.
 \begin{align*}
-    \sum_{j = 1}^n \dfrac{w_{\pi(j)}}{\sum_{k = 1}^j p_{\pi(k)}} =  \sum_{j = 1}^n \dfrac{w_{j}}{C_j}
+    \sum_{j = 1}^n \dfrac{w_{\pi(j)}}{\sum_{k = 1}^j p_{\pi(k)}} = \sum_{j = 1}^n \dfrac{\pi(j)}{C_{\pi(j)}} =  \sum_{j = 1}^n \dfrac{w_{j}}{C_j}
 \end{align*}
-With all premises explained, we can also introduce a mathematical programming formulation. Note that $S_n$ stands for the permutation group of order $n$. 
-\begin{align}
-    &\max \sum_{j = 1}^n \dfrac{w_j}{C_j} \label{eq:mathprog} \tag{A} \\ 
-    \text{s. t.\ }& C_{\pi(j+1)} - C_{\pi(j)} = p_{\pi(j)} \forall j \nonumber \\
-    & \pi \in S_n \nonumber
-\end{align}
-Should this be a linear program, we can solve it in polynomial time. However, the objective function 
-itself is not linear, while the constraints involving permutation are also complicated. 
-Hence, we want to explore the different possibilities for solving this problem concerning mathematical programming. 
-
-\section{Theoretical Backgrounds}
-The fundamental idea is reformulating the problem as a linear program or a convex program, which 
-is solvable in polynomial time. By removing the completion time in \ref{eq:mathprog}, we obtain a
-linear objective function. 
+With all premises explained, we can finally introduce a mathematical programming formulation. Note that $S_n$ stands for the permutation group of order $n$. 
 \begin{align*}
     &\max w^T \cdot x \label{eq:linobj} \tag{B} \\ 
     \text{s. t.\ }& C_{\pi(j+1)} - C_{\pi(j)} = p_{\pi(j)} \forall j \\
     & \pi \text{ is a permutation} \\ 
     & x_j = \dfrac{1}{C_j} \ \ \forall j \in [n] 
 \end{align*}
-Following this formulation, an intuition is
-computing the convex hull of feasible solutions, which are all possible combinations of the completion time's reciprocals. 
+Should this be a linear program, we can solve the problem in polynomial time. 
+However, the constraints are not linear, for they are based on the permutations.
+Hence, our primitive goal is finding an equivalent linear program to this formulation. In addition, 
+we are also interested in the potential of convex programming in this problem. 
+
+\section{Theoretical Backgrounds}
+Following the formulation, an intuition is computing the convex hull of feasible solutions, 
+which are all possible combinations of the completion time's reciprocals. 
 \begin{align*}
  s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n}\right)
 \end{align*} 
 We can observe that each solution vector corresponds to a permutation of the consumption rate. 
-More precisely, the longer the completion time, the later the tank is consumed in the permutation.
+More precisely, the longer the completion time, the later the volume is consumed in the permutation.
 There are $n!$ many of these vectors, and the convex hull is a polytope in $\R^n$. 
-Thus, we are interested in a special shape, a permutahedron.
+Thus, we want to explore the special properties of this polytope.
+
+\subsection{Description of the Polytope}
+We refer to a convex polytope $\Poly$ as a convex set in $R^n$ Euclidean space describing a polytope. 
+There are two ways to describe a polytope.
+\begin{enumerate}
+    \item $V$-Representation: A convex hull of finite set of points. 
+    \begin{align*}
+        \Poly = \text{conv}\{v_1, \cdots, v_n \}
+    \end{align*}
+    \item $H$-Representation: A finite sets of inequalities, i.e. the intersection of half-spaces
+    \begin{align*}
+        \Poly = \{x \in \R^n | Ax \leq b \}
+    \end{align*}
+\end{enumerate}
+It is known that the two representations are equivalent. 
+\begin{theorem}
+    \label{thm:polytope}
+    For each polytope $\Poly$ in $\R^n$, there is an $H$-polytope $\Poly$'s 
+    describing exactly the same polytope as $\Poly$ and vice versa.
+\end{theorem}
+In practice, theorem \ref{thm:polytope} is the theoretical basis for us to 
+compute the convex hull of solution vectors as a set of inequalities.
+
 
 \subsection{Permutation Matrices}
 Before we take a closer look at permutahedra, we need to introduce permutation matrices.
@@ -278,10 +304,74 @@ There are roundabouts to make them convex, by introducing inequalities.
  x_i y_i &\geq 1 \ \forall i \\
  y &\geq \Pi^T S \Pi p
 \end{align*}
-In this way, we can obtain a feasible, convex, but unbounded area. 
-Unboundedness is another problem, for we are doing a maximization. 
+While we can easily agree that linear constraints are convex, we would like to 
+show that these quandratic inequalities are convex.
+\begin{lemma}
+    The introduced quadratic inequalities are convex.
+\end{lemma}
+\begin{proof}
+    We start with the first inequality. Let $i, j$ be arbitrary.
+    By assumption, it holds that $x_iy_i \geq 1$, $x_jy_j \geq 1$ and $x, y \geq 0$.
+    For any $\lambda \in [0, 1]$, it follows 
+    \begin{align*}
+        &(\lambda x_i + (1-\lambda) x_j)(\lambda y_i + (1-\lambda) y_j) \\
+        &= \lambda^2 x_i y_i + (1-\lambda)^2 x_j y_j + \lambda(1-\lambda)(x_iy_j + x_jy_i) \\
+        &\geq \lambda^2 + (1-\lambda)^2 + \lambda(1-\lambda)(x_iy_j + x_jy_i) \\ 
+        &\geq \lambda^2 + (1-\lambda)^2 + \lambda(1-\lambda)(\dfrac{y_j}{y_i} + \dfrac{y_i}{y_j}) \\ 
+        &\geq \lambda^2 + (1-\lambda)^2 + 2\lambda(1-\lambda) \\ 
+        &= \lambda^2 + 1 - 2\lambda(1-\lambda) + \lambda^2 + 2\lambda(1-\lambda) \\ 
+        &= 1 + 2\lambda^2 \geq 1
+    \end{align*}
+    Now we consider the second inequality. Recall that $\Pi^T = \Pi^{-1}$.
+    We can rewrite the inequality as
+    \begin{align*}
+        \Pi y - S\Pi p \geq 0
+    \end{align*}
+    Note that the term $S\Pi p$ is linear for $z$'s and $y$'s.
+    Thus, we only have deal with the term $\Pi y$. We take a closer look at this product.
+    \begin{align*}
+        \Pi y &= \begin{pmatrix}
+            \sum_{j = 0}^{n} z_{1j}y_j \\
+            \vdots \\
+            \sum_{j = 0}^{n} z_{nj}y_j
+        \end{pmatrix}
+    \end{align*}
+    Analogously to the first inequality, we can show that $z_{ij}y_j \geq 0$ is convex. 
+    By adding up all these inequalities, we obtain that $\sum_{j = 0}^{n} z_{ij}y_j \geq 0$ is also convex.
+    In conclusion, the inequality $\Pi y - S\Pi p \geq 0$ is convex.
+\end{proof}
+In this way, we can obtain a feasible, convex, but \textbf{unbounded} area. 
+\begin{lemma}
+    The feasible are of the given convex program is unbounded.
+\end{lemma}
+\begin{proof}
+    Suppose for contradiction that the feasible area is bounded.
+    Specifically, we would show that $y$ is unbounded. Hence, 
+    there exists by assumption a constant $M$ such that $|y| \leq M$ for all 
+    feasible $y$. \\ 
+    Let $\hat{y}$ be arbitrarily feasible. We construct a new feasible $\hat{y}'$ by 
+    \begin{align*}
+        \hat{y}' = \hat{y} + M \cdot \vec{\mathbf{1}}
+    \end{align*} 
+    Now we check all three constraints concerning $\hat{y}'$.
+    We start with non-negativity.
+    \begin{align*}
+        \hat{y}' &= \hat{y} + M \cdot \vec{\mathbf{1}} \geq \hat{y} \geq 0
+    \end{align*}
+    For $x_iy_i \geq 1$, increasing $\hat{y}_i$ by $M$ also results in a valid $\hat{y}_i$.
+    Analogously, the second inequality is also satisfied. Thus, $\hat{y}'$ is feasible. \\
+    It follows 
+    \begin{align*}
+        |\hat{y}'| = |\hat{y} + M \cdot \vec{\mathbf{1}}| \geq |\hat{y}| + M \cdot n > M
+    \end{align*}
+    which is a contradiction. Hence, the feasible area is unbounded.
+\end{proof}
+
+\textbf{Unboundedness} is another problem, for we objective function is maximized. 
+Thus, any attempts on convex optimization would maximize the objective function to infinitely.
+This discovery also hints that relaxing this non-convex problem 
+to a convex version might always result in an unbounded feasible area.
 Unfortunately, we cannot solve the problem with this non-linear programming approach. 
-\textbf{DO I HAVE TO SHOW THE CONVEXITY HERE?}
 
 \subsection{Simple Practical Experiments}
 Although the program is not convex, we can still run it in some scientific computing software.
@@ -292,31 +382,49 @@ ends up in a dead loop without termination.
 \section{Attempts with linear programming}
 Since finding a convex formulation directly from permutahedra is impossible, 
 we wonder if we can find the polytope describing the solution vectors in a linear programming way.
-Without too many theoretical backgrounds, we decided to do some practical computation on those vertices.
+Without too many theoretical backgrounds, 
+we decided to do some practical computation on those vertices.
 
-\paragraph{Input Generation}
-As we have analyzed in the first attempt, we want to compute the polytope of all solution vectors 
+\paragraph{Setups}
+For the computation of the polytope with vertices, we use the scientific computing software polymake \cite{assarf2017computing}.
+Polymake is a software that can compute the $H$-representation of a polytope given the $V$-representation. 
+The computation was run on a private computer with Intel i5-12600k CPU with 16 GB RAM. 
+
+
+\subsection{Input Generation}
+As we have analyzed in the first attempt, we want to compute the convex hull of all solution vectors.
+We name the polytope describing this convex hull as $\Poly$.
 \begin{align*}
  s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n} \right)
 \end{align*}
 Since the completion time is based on the permutation $\pi$, we need a few steps to generate all possible 
 vectors. 
 \begin{enumerate}
-    \item Generate a randomized/special consumption time $p_j$
+    \item Generate a randomized/special processing time $p_j$
     \item Pick a permutation $\pi$, arrange the consumption time in the order of $\pi$
     \item Compute the completion time by $C_1 = p_1$ and $C_{i+1} = C_i + p_{i+1}$
     \item Compute the inverse of $C_j$
     \item Repeat until all permutations are visited
 \end{enumerate}
 This results in $n!$ vertices in $\R^n$. A straightforward traversal on the vertices is not 
-polynomial-time, but it may help us to find some polynomial-time structure within the polytope.
-
-\paragraph{Setups}
-For the computation of the polytope with vertices, we use the scientific computing software polymake \cite{assarf2017computing}.
-Polymake is a software that can compute the convex hull of a set of points in $\R^n$. 
-The computation was run on a private computer with Intel i5-12600k CPU with 16 GB RAM. 
+polynomial-time, but it may help us to find some polynomial-time structure within the polytope $\Poly$.
 
 \subsection{First Computation}
+\paragraph{Direct Observations}
+Having tested a few randomly generated inputs, we have made some direct observations.
+When several identical processing times are generated, the number of facets is largely reduced.
+Suppose $n$ processing times were generated, while there were only $m$ unique values. 
+The resulting polytope can be reduced to a polytope in $\R^m$.\\
+The reason is also straightforward. If two identical values were generated, 
+the number of unique solution vectors will also be reduced. Let $i$ and $j$ be 
+arbitrary indices such that $p_i = p_j$. For each value of $C_i$ in permutation $\pi$, 
+there is a $C'_j$ of the same value in another permutation $\pi'$. 
+$C'_j$ and $\pi'$ can be generated by simply swapping $i$ and $j$ in the permutation $\pi$. \\
+In conclusion, it makes sense that our computational experiments should be based 
+on the number of unique values in the processing time. 
+Thus, we only generated unique processing times in the following experiments. 
+
+\paragraph{Running Time in Practice}
 Although the computation of the polytope is polynomial-time in the number of vertices, our computation takes 
 a significant amount of time. The reason is that the number of vertices is exponential in $n$. 
 For the first few dimensions, the computation was quick and the results were as expected.
@@ -326,10 +434,13 @@ This largely stops us from further computation in even higher dimensions.
 Luckily, we have obtained some raw data of the first 6 dimensions. 
 The number of facets do not resemble a polynomial growth, hence we would expect an exponential growth in this case.
 
+ 
 \subsection{Mass Computation for patterns}
 The exponential growth of facets does not mean an expential decision prodecure for the polytope. 
 Our second trial serves as mass computation in lower dimensions, where we want to obtain 
-as many data as possible. Based on those data, we would like to find a pattern in 
+as many data as possible. In total, we have generated 10,000 inputs for 4-dimensional cases, 
+and 1,000 inputs for 5-dimensional cases. \\
+Based on those data, we would like to find a pattern in 
 the number of facets. Thus, we establish a large amount of 
 computation in $n = 4$ and $n = 5$. Some direct oberservations are shown in the following table. 
 \begin{table}[ht]
@@ -355,7 +466,28 @@ computation in $n = 4$ and $n = 5$. Some direct oberservations are shown in the 
 Starting from $n = 4$, the number of facets is no longer unique. 
 Hence, we guess that the number of facets is somehow related to the input chosen. 
 Unfortunately, a direct pattern was not observed for $n=5$.
-One interesting case for $n = 4$ is when the number of facets is 67. Elaborate more ...
+One interesting case for $n = 4$ is when the number of facets is 67.
+Among 10,000 inputs, only one input results in 67 facets. 
+
+\paragraph{A Special Input}
+We would like elaborate on this case to explain what we have observed.
+The generated input for this 4d case is
+\begin{align*}
+    p_0 = (26, 35, 55, 81)
+\end{align*}
+By brute-force, we are able to obtain all possible values for each in dimension in 
+our polytope. One numerical observation is $26+53 = 79$. If we recall 
+the direction observation in the previous part, we can see this might result in 
+a reduction in the number of solution vectors. In our results, the number of unique vectors is not reduced.
+However, such relations reduces the number of higher dimensional faces. 
+As a result, we have fewer facets.\\
+Then we also tried to reproduce this result, it was discovered that the vector $p$ 
+in satisfying the following property will result in the exactly 67 facets.
+\begin{align*}
+    p = (a, b, 3b - 2a, 3b - a)
+\end{align*}
+One simplest example is $p = (1, 2, 4, 5)$. 
+We still fail to derive more general results from this observation.
 
 \subsection{Patterns by Machine Learning}
 Since no direct pattern was observed, we would like to use machine learning techniques to find a pattern in the data.
@@ -370,7 +502,8 @@ Here are some results
 \begin{enumerate}
     \item Linear Regression: The regression models do not fit well; we only obtain an accuracy barely above $0.5$.
     \item Logistic Regression: slightly better than linear regression, but still not good enough.
-    \item Clustering: The data were clustered into 2 or 3 clusters, but the clusters do not have a clear meaning.
+    \item Discriminant Analysis: We do not infer the column dependency to linear, so quandratic discriminant analysis was experimented.
+    However, the approach is not really suitable for multimonial classification.
     \item Trees models: Tree-based models work best, but the tree's visualization is unclear, and we don't see much meaning behind it.
 \end{enumerate}
 In conclusion, the tree models tend to work better on the data, but due to the lack of features,
@@ -378,22 +511,24 @@ we cannot draw direct conclusion on the how the patterns can be discovered insid
 The fundamental machine learning techniques did not help us to discover the pattern, one 
 would also consider deep learning techniques for this problem.
 
-\paragraph{Visualization and Discoveries}
+\subsection{Visualization and Discoveries}
 Aside from machine learning, we also visualized the data to see if any pattern was observed, as shown in the figure below. 
 A clear separation can be witnessed, but we cannot find a smooth curve separating the data, for outliers reside 
 in the middle of the other category. 
-%\begin{figure*}[ht]
-%    \centering
-%    \includegraphics[scale=0.6]{3d_plot.png}
-%\end{figure*}
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[scale=0.6]{3d_plot.png}
+\end{figure*}
 On the other hand, the data themselves also yield interesting properties. If we consider a solution vector 
 \begin{align*}
  s = \left( \dfrac{1}{C_1}, \dfrac{1}{C_2}, ..., \dfrac{1}{C_n} \right)
 \end{align*}
-For every two dimensions $ i \neq j$, the tank of the $i-$th plane is consumed before the $j-$th plane, or vice versa.
+For every two dimensions $ i \neq j$, the volume of the $i-$th plane is consumed before the $j-$th plane, or vice versa.
 Formally speaking, either $C_1 < C_2$ or vice versa, and there is an equal amount of them, separated by the hyperplane 
 $x_i - x_j = 0$. This separation is a valuable property and an interesting technique called \textbf{hyperplane arrangements} 
-endeavors to research it.
+endeavors to research it. We also tried a greedy algorithm on based on this discovery, but the results 
+were not satisfactory. The greedy search does not yield the exact solution already in the 6-dimensional case.
+\textbf{EXPAND FOR DETAILS IN GREEDY SEARCH?}
 
 \subsection{Formulation with Vasquez's Idea}
 As an introduction, Vasquez's research \cite{vasquez2015airplane} on this problem was carefully studied 
